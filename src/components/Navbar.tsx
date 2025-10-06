@@ -34,41 +34,71 @@ export const Navbar = ({ user, isAdmin }: NavbarProps) => {
     <nav className="border-b border-border bg-card shadow-sm">
       <div className="container mx-auto px-4">
         <div className="flex h-16 items-center justify-between">
-          <Link to="/" className="flex items-center gap-3">
-            <img src={nccLogo} alt="NCC Logo" className="h-10 w-10" />
-            <div>
-              <h1 className="text-xl font-bold text-foreground">NCC Air Wing</h1>
-              <p className="text-xs text-muted-foreground">Student Portal</p>
-            </div>
+          {/* Left: Logo */}
+          <Link to="/" className="flex items-center">
+            <img src={nccLogo} alt="NCC Logo" className="h-10 w-10 hover:opacity-80 transition-opacity" />
           </Link>
 
+          {/* Center: Navigation Links */}
           {user && (
             <div className="flex items-center gap-4">
-              {isAdmin && (
-                <Button
-                  variant="secondary"
-                  onClick={() => navigate("/admin")}
-                  className="transition-all hover:scale-105"
-                >
-                  Admin Dashboard
-                </Button>
-              )}
               <Button
-                variant="default"
+                variant="ghost"
                 onClick={() => navigate("/profile")}
                 className="transition-all hover:scale-105"
               >
-                My Profile
+                Profile
               </Button>
+              {isAdmin && (
+                <>
+                  <Button
+                    variant="ghost"
+                    onClick={() => navigate("/admin")}
+                    className="transition-all hover:scale-105"
+                  >
+                    Admin Panel
+                  </Button>
+                  <Button
+                    variant="ghost"
+                    onClick={() => navigate("/admin")}
+                    className="transition-all hover:scale-105"
+                  >
+                    Admin Dashboard
+                  </Button>
+                </>
+              )}
+            </div>
+          )}
+
+          {/* Right: Auth Buttons */}
+          <div className="flex items-center gap-3">
+            {user ? (
               <Button
                 variant="outline"
                 onClick={handleLogout}
                 className="transition-all hover:scale-105"
               >
-                Logout
+                Sign Out
               </Button>
-            </div>
-          )}
+            ) : (
+              <>
+                <Button
+                  variant="ghost"
+                  onClick={() => navigate("/auth")}
+                  className="transition-all hover:scale-105"
+                >
+                  Sign In
+                </Button>
+                <Button
+                  variant="default"
+                  onClick={() => navigate("/auth")}
+                  className="transition-all hover:scale-105"
+                >
+                  Sign Up
+                </Button>
+              </>
+            )}
+          </div>
         </div>
       </div>
     </nav>
