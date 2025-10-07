@@ -49,7 +49,7 @@ useEffect(() => {
     if (!user) return;
 
     const { data: role } = await supabase
-      .from("user_roles")
+      .from("students")
       .select("role")
       .eq("user_id", user.id)
       .eq("role", "admin")

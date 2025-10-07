@@ -375,7 +375,7 @@ export const Constants = {
     Enums: {
       app_role: ["admin", "student"],
       experience_type: ["placement", "internship"],
-      ncc_wing_type: ["air", "army", "navy"],
+      ncc_wing_type: ["air"],
     },
   },
 } as const
