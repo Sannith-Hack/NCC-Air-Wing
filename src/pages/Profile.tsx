@@ -11,6 +11,35 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { supabase } from "@/integrations/supabase/client";
 import { useToast } from "@/hooks/use-toast";
 import { User, Session } from "@supabase/supabase-js";
+import { z } from "zod";
+
+const studentSchema = z.object({
+  name: z.string().trim().min(1, "Name is required").max(100, "Name must be less than 100 characters"),
+  email: z.string().trim().email("Invalid email address").max(255, "Email must be less than 255 characters"),
+  branch: z.string().trim().max(100, "Branch must be less than 100 characters").optional(),
+  year: z.string().refine(val => !val || (parseInt(val) >= 1 && parseInt(val) <= 5), "Year must be between 1 and 5").optional(),
+  address: z.string().trim().max(500, "Address must be less than 500 characters").optional(),
+  phone_number: z.string().regex(/^[0-9]{10}$/, "Phone number must be exactly 10 digits").optional().or(z.literal("")),
+  parents_phone_number: z.string().regex(/^[0-9]{10}$/, "Parent's phone number must be exactly 10 digits").optional().or(z.literal("")),
+  aadhaar_number: z.string().regex(/^[0-9]{12}$/, "Aadhaar must be exactly 12 digits").optional().or(z.literal("")),
+  pan_number: z.string().regex(/^[A-Z]{5}[0-9]{4}[A-Z]$/, "PAN format must be: ABCDE1234F").optional().or(z.literal("")),
+  account_number: z.string().trim().min(8, "Account number must be at least 8 characters").max(20, "Account number must be less than 20 characters").optional().or(z.literal("")),
+});
+
+const nccSchema = z.object({
+  ncc_wing: z.enum(["air", "army", "navy"]),
+  regimental_number: z.string().trim().max(50, "Regimental number must be less than 50 characters").optional(),
+  enrollment_date: z.string().optional(),
+  cadet_rank: z.string().trim().max(50, "Cadet rank must be less than 50 characters").optional(),
+});
+
+const experienceSchema = z.object({
+  experience: z.enum(["placement", "internship"]),
+  company_name: z.string().trim().min(1, "Company name is required").max(100, "Company name must be less than 100 characters"),
+  role: z.string().trim().max(100, "Role must be less than 100 characters").optional(),
+  start_date: z.string().optional(),
+  end_date: z.string().optional(),
+});
 
 const Profile = () => {
   const navigate = useNavigate();
@@ -137,25 +166,35 @@ const Profile = () => {
     if (!user) return;
     setLoading(true);
 
-    const studentPayload = {
-      user_id: user.id,
-      name: formData.name,
-      email: formData.email,
-      branch: formData.branch || null,
-      year: formData.year ? parseInt(formData.year) : null,
-      address: formData.address || null,
-      phone_number: formData.phone_number || null,
-      parents_phone_number: formData.parents_phone_number || null,
-      aadhaar_number: formData.aadhaar_number || null,
-      pan_number: formData.pan_number || null,
-      account_number: formData.account_number || null,
-    };
+    // Validate form data
+    const validationResult = studentSchema.safeParse(formData);
+    
+    if (!validationResult.success) {
+      const firstError = validationResult.error.errors[0];
+      toast({
+        title: "Validation Error",
+        description: firstError.message,
+        variant: "destructive",
+      });
+      setLoading(false);
+      return;
+    }
 
     if (studentData) {
-      const { error } = await supabase
-        .from("students")
-        .update(studentPayload)
-        .eq("student_id", studentData.student_id);
+      // Use RPC function to update with encryption
+      const { error } = await supabase.rpc("update_student_encrypted", {
+        p_user_id: user.id,
+        p_name: formData.name,
+        p_email: formData.email,
+        p_branch: formData.branch || null,
+        p_year: formData.year ? parseInt(formData.year) : null,
+        p_address: formData.address || null,
+        p_phone_number: formData.phone_number || null,
+        p_parents_phone_number: formData.parents_phone_number || null,
+        p_aadhaar_number: formData.aadhaar_number || null,
+        p_pan_number: formData.pan_number || null,
+        p_account_number: formData.account_number || null,
+      });
 
       if (error) {
         toast({
@@ -171,7 +210,20 @@ const Profile = () => {
         fetchStudentData();
       }
     } else {
-      const { error } = await supabase.from("students").insert([studentPayload]);
+      // Use RPC function to insert with encryption
+      const { error } = await supabase.rpc("insert_student_encrypted", {
+        p_user_id: user.id,
+        p_name: formData.name,
+        p_email: formData.email,
+        p_branch: formData.branch || null,
+        p_year: formData.year ? parseInt(formData.year) : null,
+        p_address: formData.address || null,
+        p_phone_number: formData.phone_number || null,
+        p_parents_phone_number: formData.parents_phone_number || null,
+        p_aadhaar_number: formData.aadhaar_number || null,
+        p_pan_number: formData.pan_number || null,
+        p_account_number: formData.account_number || null,
+      });
 
       if (error) {
         toast({
@@ -197,6 +249,19 @@ const Profile = () => {
       toast({
         title: "Error",
         description: "Please save your student details first",
+        variant: "destructive",
+      });
+      return;
+    }
+
+    // Validate form data
+    const validationResult = nccSchema.safeParse(nccForm);
+    
+    if (!validationResult.success) {
+      const firstError = validationResult.error.errors[0];
+      toast({
+        title: "Validation Error",
+        description: firstError.message,
         variant: "destructive",
       });
       return;
@@ -239,6 +304,19 @@ const Profile = () => {
       toast({
         title: "Error",
         description: "Please save your student details first",
+        variant: "destructive",
+      });
+      return;
+    }
+
+    // Validate form data
+    const validationResult = experienceSchema.safeParse(expForm);
+    
+    if (!validationResult.success) {
+      const firstError = validationResult.error.errors[0];
+      toast({
+        title: "Validation Error",
+        description: firstError.message,
         variant: "destructive",
       });
       return;

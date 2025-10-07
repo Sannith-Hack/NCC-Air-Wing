@@ -95,13 +95,16 @@ export type Database = {
       }
       students: {
         Row: {
+          aadhaar_encrypted: string | null
           aadhaar_number: string | null
           account_number: string | null
+          account_number_encrypted: string | null
           address: string | null
           branch: string | null
           created_at: string | null
           email: string
           name: string
+          pan_encrypted: string | null
           pan_number: string | null
           parents_phone_number: string | null
           phone_number: string | null
@@ -110,13 +113,16 @@ export type Database = {
           year: number | null
         }
         Insert: {
+          aadhaar_encrypted?: string | null
           aadhaar_number?: string | null
           account_number?: string | null
+          account_number_encrypted?: string | null
           address?: string | null
           branch?: string | null
           created_at?: string | null
           email: string
           name: string
+          pan_encrypted?: string | null
           pan_number?: string | null
           parents_phone_number?: string | null
           phone_number?: string | null
@@ -125,13 +131,16 @@ export type Database = {
           year?: number | null
         }
         Update: {
+          aadhaar_encrypted?: string | null
           aadhaar_number?: string | null
           account_number?: string | null
+          account_number_encrypted?: string | null
           address?: string | null
           branch?: string | null
           created_at?: string | null
           email?: string
           name?: string
+          pan_encrypted?: string | null
           pan_number?: string | null
           parents_phone_number?: string | null
           phone_number?: string | null
@@ -167,12 +176,70 @@ export type Database = {
       [_ in never]: never
     }
     Functions: {
+      decrypt_sensitive_data: {
+        Args: { encrypted: string }
+        Returns: string
+      }
+      encrypt_sensitive_data: {
+        Args: { plaintext: string }
+        Returns: string
+      }
+      get_student_decrypted: {
+        Args: { p_user_id: string }
+        Returns: {
+          aadhaar_number: string
+          account_number: string
+          address: string
+          branch: string
+          created_at: string
+          email: string
+          name: string
+          pan_number: string
+          parents_phone_number: string
+          phone_number: string
+          student_id: string
+          user_id: string
+          year: number
+        }[]
+      }
       has_role: {
         Args: {
           _role: Database["public"]["Enums"]["app_role"]
           _user_id: string
         }
         Returns: boolean
+      }
+      insert_student_encrypted: {
+        Args: {
+          p_aadhaar_number: string
+          p_account_number: string
+          p_address: string
+          p_branch: string
+          p_email: string
+          p_name: string
+          p_pan_number: string
+          p_parents_phone_number: string
+          p_phone_number: string
+          p_user_id: string
+          p_year: number
+        }
+        Returns: string
+      }
+      update_student_encrypted: {
+        Args: {
+          p_aadhaar_number: string
+          p_account_number: string
+          p_address: string
+          p_branch: string
+          p_email: string
+          p_name: string
+          p_pan_number: string
+          p_parents_phone_number: string
+          p_phone_number: string
+          p_user_id: string
+          p_year: number
+        }
+        Returns: undefined
       }
     }
     Enums: {

@@ -14,19 +14,21 @@ const Index = () => {
   const [session, setSession] = useState<Session | null>(null);
   const [isAdmin, setIsAdmin] = useState(false);
 
-  useEffect(() => {
-    const { data: { subscription } } = supabase.auth.onAuthStateChange((event, session) => {
-      setSession(session);
-      setUser(session?.user ?? null);
-    });
+useEffect(() => {
+  // Set initial session
+  supabase.auth.getSession().then(({ data: { session } }) => {
+    setSession(session);
+    setUser(session?.user ?? null);
+  });
 
-    supabase.auth.getSession().then(({ data: { session } }) => {
-      setSession(session);
-      setUser(session?.user ?? null);
-    });
+  // Listen for changes
+  const { data: { subscription } } = supabase.auth.onAuthStateChange((_event, session) => {
+    setSession(session);
+    setUser(session?.user ?? null);
+  });
 
-    return () => subscription.unsubscribe();
-  }, []);
+  return () => subscription.unsubscribe();
+}, []);
 
   useEffect(() => {
     if (user) {
@@ -87,6 +89,7 @@ const Index = () => {
                 Access and update your personal information, NCC details, and experience records.
               </p>
               {user && (
+                // In Index.tsx, update all instances of navigate("/student-portal")
                 <Button onClick={() => navigate("/profile")} className="w-full">
                   My Profile
                 </Button>
@@ -104,7 +107,7 @@ const Index = () => {
                 Record your NCC wing, regimental number, ranks, and enrollment information.
               </p>
               {user && (
-                <Button onClick={() => navigate("/profile")} variant="secondary" className="w-full">
+                <Button onClick={() => navigate("/student-portal")} variant="secondary" className="w-full">
                   Update Details
                 </Button>
               )}
@@ -121,7 +124,7 @@ const Index = () => {
                 Add and manage your internship and placement records for future reference.
               </p>
               {user && (
-                <Button onClick={() => navigate("/profile")} variant="secondary" className="w-full">
+                <Button onClick={() => navigate("/student-portal")} variant="secondary" className="w-full">
                   Add Experience
                 </Button>
               )}
