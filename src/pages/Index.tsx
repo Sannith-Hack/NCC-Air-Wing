@@ -1,53 +1,15 @@
-import { useEffect, useState } from "react";
 import { useNavigate } from "react-router-dom";
-import { Navbar } from "@/components/Navbar";
-import { Button } from "@/components/ui/button";
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
-import { supabase } from "@/integrations/supabase/client";
-import { User, Session } from "@supabase/supabase-js";
-import heroBanner from "@/assets/ncc-hero-banner.jpg";
-import nccLogo from "@/assets/ncc-logo.png";
+import { Navbar } from "../components/Navbar";
+import { Button } from "../components/ui/button";
+import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "../components/ui/card";
+import { useAuth } from "../context/AuthContext";
+import heroBanner from "../assets/ncc-hero-banner.jpg";
+import nccLogo from "../assets/ncc-logo.png";
 
 const Index = () => {
   const navigate = useNavigate();
-  const [user, setUser] = useState<User | null>(null);
-  const [session, setSession] = useState<Session | null>(null);
-  const [isAdmin, setIsAdmin] = useState(false);
-
-useEffect(() => {
-  // Set initial session
-  supabase.auth.getSession().then(({ data: { session } }) => {
-    setSession(session);
-    setUser(session?.user ?? null);
-  });
-
-  // Listen for changes
-  const { data: { subscription } } = supabase.auth.onAuthStateChange((_event, session) => {
-    setSession(session);
-    setUser(session?.user ?? null);
-  });
-
-  return () => subscription.unsubscribe();
-}, []);
-
-  useEffect(() => {
-    if (user) {
-      checkAdmin();
-    }
-  }, [user]);
-
-  const checkAdmin = async () => {
-    if (!user) return;
-    
-    const { data } = await supabase
-      .from("students")
-      .select("role")
-      .eq("user_id", user.id)
-      .eq("role", "admin")
-      .maybeSingle();
-
-    setIsAdmin(!!data);
-  };
+  // All local auth state is replaced by this single hook
+  const { user, isAdmin } = useAuth();
 
   return (
     <div className="min-h-screen bg-background">
@@ -89,7 +51,6 @@ useEffect(() => {
                 Access and update your personal information, NCC details, and experience records.
               </p>
               {user && (
-                // In Index.tsx, update all instances of navigate("/student-portal")
                 <Button onClick={() => navigate("/profile")} className="w-full">
                   My Profile
                 </Button>

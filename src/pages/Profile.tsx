@@ -1,10 +1,10 @@
 import { useEffect, useState } from "react";
 import { useNavigate } from "react-router-dom";
-import { Navbar } from "@/components/Navbar";
-import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import { supabase } from "@/integrations/supabase/client";
-import { useToast } from "@/hooks/use-toast";
-import { User, Session } from "@supabase/supabase-js";
+import { Navbar } from "../components/Navbar";
+import { Tabs, TabsContent, TabsList, TabsTrigger } from "../components/ui/tabs";
+import { supabase } from "../integrations/supabase/client";
+import { useToast } from "../hooks/use-toast";
+import { useAuth } from "../context/AuthContext";
 import { PersonalDetailsTab } from "./PersonalDetailsTab";
 import { NccDetailsTab } from "./NccDetailsTab";
 import { ExperienceTab } from "./ExperienceTab";
@@ -12,69 +12,46 @@ import { ExperienceTab } from "./ExperienceTab";
 const Profile = () => {
   const navigate = useNavigate();
   const { toast } = useToast();
-  const [user, setUser] = useState<User | null>(null);
-  const [session, setSession] = useState<Session | null>(null);
-  const [isAdmin, setIsAdmin] = useState(false);
+  const { user, isAdmin, loading: authLoading } = useAuth();
+  
   const [loading, setLoading] = useState(false);
-  const [loadingAuth, setLoadingAuth] = useState(true);
-
   const [studentData, setStudentData] = useState<any>(null);
   const [nccDetails, setNccDetails] = useState<any[]>([]);
   const [experiences, setExperiences] = useState<any[]>([]);
 
   const [formData, setFormData] = useState({
-    name: "", email: "", branch: "", year: "", address: "",
+    name: "", email: "", branch: "", year: "", roll_no: "", address: "",
     phone_number: "", parents_phone_number: "", aadhaar_number: "",
     pan_number: "", account_number: "",
   });
 
   const [nccForm, setNccForm] = useState({
-    ncc_wing: "air", regimental_number: "", enrollment_date: "", cadet_rank: "",
+    ncc_wing: "air",
+    regimental_number: "",
+    enrollment_date: "",
+    cadet_rank: "",
+    my_ncc_certification: "N/D",
+    camps_attended: "",
+    awards_received_in_national_camp: "",
   });
-  
+
   const [expForm, setExpForm] = useState({
     experience: "internship", company_name: "", role: "", start_date: "", end_date: "",
   });
 
   useEffect(() => {
-    setLoadingAuth(true);
-    supabase.auth.getSession().then(({ data: { session } }) => {
-      setSession(session);
-      setUser(session?.user ?? null);
-      setLoadingAuth(false);
-    });
-
-    const { data: { subscription } } = supabase.auth.onAuthStateChange((_event, session) => {
-      setSession(session);
-      setUser(session?.user ?? null);
-    });
-
-    return () => subscription.unsubscribe();
-  }, []);
-
-  useEffect(() => {
-    if (loadingAuth) return;
-    if (!user) {
+    if (!authLoading && !user) {
       navigate("/auth");
       return;
     }
-    checkAdmin();
-    fetchStudentData();
-  }, [user, navigate, loadingAuth]);
-
-  const checkAdmin = async () => {
-    if (!user) return;
-    const { data } = await supabase
-      .from("students")
-      .select("role")
-      .eq("user_id", user.id)
-      .eq("role", "admin")
-      .maybeSingle();
-    setIsAdmin(!!data);
-  };
+    if (user) {
+      fetchStudentData();
+    }
+  }, [user, authLoading, navigate]);
 
   const fetchStudentData = async () => {
     if (!user) return;
+    setLoading(true);
     const { data: student } = await supabase
       .from("students")
       .select("*")
@@ -88,6 +65,7 @@ const Profile = () => {
         email: student.email || "",
         branch: student.branch || "",
         year: student.year?.toString() || "",
+        roll_no: student.roll_no || "",
         address: student.address || "",
         phone_number: student.phone_number || "",
         parents_phone_number: student.parents_phone_number || "",
@@ -104,6 +82,7 @@ const Profile = () => {
     } else {
       setFormData((prev) => ({ ...prev, email: user.email || "" }));
     }
+    setLoading(false);
   };
 
   const handleStudentSubmit = async (e: React.FormEvent) => {
@@ -111,66 +90,94 @@ const Profile = () => {
     if (!user) return;
     setLoading(true);
 
-    // This is where the Zod validation would go
-
     const studentPayload = {
-      name: formData.name,
-      email: formData.email,
-      branch: formData.branch || null,
+      name: formData.name, email: formData.email, branch: formData.branch || null,
       year: formData.year ? parseInt(formData.year) : null,
+      roll_no: formData.roll_no || null,
       address: formData.address || null,
-      phone_number: formData.phone_number || null,
-      parents_phone_number: formData.parents_phone_number || null,
-      aadhaar_number: formData.aadhaar_number || null,
-      pan_number: formData.pan_number || null,
+      phone_number: formData.phone_number || null, parents_phone_number: formData.parents_phone_number || null,
+      aadhaar_number: formData.aadhaar_number || null, pan_number: formData.pan_number || null,
       account_number: formData.account_number || null,
     };
 
     if (studentData) {
       const { error } = await supabase.from("students").update(studentPayload).eq("user_id", user.id);
       if (error) { toast({ title: "Error", description: error.message, variant: "destructive" }); }
-      else { toast({ title: "Success", description: "Profile updated successfully" }); fetchStudentData(); }
+      else { toast({ title: "Success", description: "Profile updated successfully" }); await fetchStudentData(); }
     } else {
       const { error } = await supabase.from("students").insert({ ...studentPayload, user_id: user.id });
       if (error) { toast({ title: "Error", description: error.message, variant: "destructive" }); }
-      else { toast({ title: "Success", description: "Profile created successfully" }); fetchStudentData(); }
+      else { toast({ title: "Success", description: "Profile created successfully" }); await fetchStudentData(); }
     }
     setLoading(false);
   };
-
+  
   const handleNccSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    if (!studentData) {
-      toast({ title: "Error", description: "Please save your student details first", variant: "destructive" });
+
+    if (nccDetails.length >= 10) {
+      toast({
+        title: "Limit Reached",
+        description: "You cannot add more than 10 NCC detail records.",
+        variant: "destructive",
+      });
       return;
     }
-    // This is where the Zod validation would go
-    const { error } = await supabase.from("ncc_details").insert([{ student_id: studentData.student_id, ...nccForm }]);
+
+    if (!studentData) { toast({ title: "Error", description: "Please save your student details first", variant: "destructive" }); return; }
+
+    const nccPayload = {
+        ...nccForm,
+        student_id: studentData.student_id,
+        camps_attended: nccForm.camps_attended ? parseInt(nccForm.camps_attended, 10) : null,
+        awards_received_in_national_camp: nccForm.awards_received_in_national_camp ? parseInt(nccForm.awards_received_in_national_camp, 10) : null,
+    };
+
+    const { error } = await supabase.from("ncc_details").insert([nccPayload]);
+
     if (error) { toast({ title: "Error", description: error.message, variant: "destructive" }); }
     else {
       toast({ title: "Success", description: "NCC details added successfully" });
-      setNccForm({ ncc_wing: "air", regimental_number: "", enrollment_date: "", cadet_rank: "" });
-      fetchStudentData();
+      setNccForm({
+        ncc_wing: "air",
+        regimental_number: "",
+        enrollment_date: "",
+        cadet_rank: "",
+        my_ncc_certification: "N/D",
+        camps_attended: "",
+        awards_received_in_national_camp: "",
+      });
+      await fetchStudentData();
     }
   };
 
   const handleExpSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    if (!studentData) {
-      toast({ title: "Error", description: "Please save your student details first", variant: "destructive" });
+
+    if (experiences.length >= 10) {
+      toast({
+        title: "Limit Reached",
+        description: "You cannot add more than 10 experience records.",
+        variant: "destructive",
+      });
       return;
     }
-    // This is where the Zod validation would go
+
+    if (!studentData) { toast({ title: "Error", description: "Please save your personal details first.", variant: "destructive" }); return; }
+    
     const { error } = await supabase.from("placements_internships").insert([{ student_id: studentData.student_id, ...expForm }]);
+    
     if (error) { toast({ title: "Error", description: error.message, variant: "destructive" }); }
     else {
       toast({ title: "Success", description: "Experience added successfully" });
       setExpForm({ experience: "internship", company_name: "", role: "", start_date: "", end_date: "" });
-      fetchStudentData();
+      await fetchStudentData();
     }
   };
 
-  if (loadingAuth || !user) return null;
+  if (authLoading || !user) {
+    return null;
+  }
 
   return (
     <div className="min-h-screen bg-background">
@@ -187,10 +194,22 @@ const Profile = () => {
             <PersonalDetailsTab formData={formData} setFormData={setFormData} handleStudentSubmit={handleStudentSubmit} loading={loading} />
           </TabsContent>
           <TabsContent value="ncc">
-            <NccDetailsTab nccForm={nccForm} setNccForm={setNccForm} handleNccSubmit={handleNccSubmit} nccDetails={nccDetails} />
+            <NccDetailsTab
+              nccForm={nccForm}
+              setNccForm={setNccForm}
+              handleNccSubmit={handleNccSubmit}
+              nccDetails={nccDetails}
+              isLimitReached={nccDetails.length >= 10}
+            />
           </TabsContent>
           <TabsContent value="experience">
-            <ExperienceTab expForm={expForm} setExpForm={setExpForm} handleExpSubmit={handleExpSubmit} experiences={experiences} />
+            <ExperienceTab
+              expForm={expForm}
+              setExpForm={setExpForm}
+              handleExpSubmit={handleExpSubmit}
+              experiences={experiences}
+              isLimitReached={experiences.length >= 10}
+            />
           </TabsContent>
         </Tabs>
       </div>
@@ -199,3 +218,4 @@ const Profile = () => {
 };
 
 export default Profile;
+

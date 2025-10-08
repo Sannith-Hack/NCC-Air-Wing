@@ -33,17 +33,22 @@ export const PersonalDetailsTab = ({ formData, setFormData, handleStudentSubmit,
               <Label htmlFor="branch">Branch</Label>
               <Input id="branch" value={formData.branch} onChange={(e) => setFormData({ ...formData, branch: e.target.value })} />
             </div>
+            {/* Add Roll Number input field */}
+            <div>
+              <Label htmlFor="roll_no">Roll Number</Label>
+              <Input id="roll_no" value={formData.roll_no} onChange={(e) => setFormData({ ...formData, roll_no: e.target.value })} />
+            </div>
             <div>
               <Label htmlFor="year">Year</Label>
               <Input id="year" type="number" value={formData.year} onChange={(e) => setFormData({ ...formData, year: e.target.value })} />
             </div>
-            <div className="md:col-span-2">
-              <Label htmlFor="address">Address</Label>
-              <Textarea id="address" value={formData.address} onChange={(e) => setFormData({ ...formData, address: e.target.value })} />
-            </div>
             <div>
               <Label htmlFor="phone">Phone Number</Label>
               <Input id="phone" value={formData.phone_number} onChange={(e) => setFormData({ ...formData, phone_number: e.target.value })} />
+            </div>
+            <div className="md:col-span-2">
+              <Label htmlFor="address">Address</Label>
+              <Textarea id="address" value={formData.address} onChange={(e) => setFormData({ ...formData, address: e.target.value })} />
             </div>
             <div>
               <Label htmlFor="parent_phone">Parent's Phone</Label>
@@ -68,5 +73,5 @@ export const PersonalDetailsTab = ({ formData, setFormData, handleStudentSubmit,
         </form>
       </CardContent>
     </Card>
-  );
+  ); //
 };
