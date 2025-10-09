@@ -14,6 +14,7 @@ CREATE TABLE Students (
     email VARCHAR(255) NOT NULL UNIQUE,
     branch VARCHAR(100),
     year INT,
+    roll_no TEXT UNIQUE;
     address TEXT,
     phone_number VARCHAR(15),
     parents_phone_number VARCHAR(15),

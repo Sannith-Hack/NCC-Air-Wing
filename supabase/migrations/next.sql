@@ -102,3 +102,19 @@ $$ LANGUAGE plpgsql SECURITY DEFINER;
 CREATE TRIGGER enforce_experience_limit_before_insert
 BEFORE INSERT ON public.placements_internships
 FOR EACH ROW EXECUTE FUNCTION public.check_experience_limit();
+
+
+
+
+-- Allow students to delete their own NCC detail records
+CREATE POLICY "Students can delete their own NCC details"
+ON public.ncc_details
+FOR DELETE
+TO authenticated
+USING (
+  student_id IN (
+    SELECT student_id
+    FROM public.students
+    WHERE user_id = auth.uid()
+  )
+);

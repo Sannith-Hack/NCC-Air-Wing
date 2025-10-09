@@ -114,66 +114,53 @@ const Profile = () => {
   
   const handleNccSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-
-    if (nccDetails.length >= 10) {
-      toast({
-        title: "Limit Reached",
-        description: "You cannot add more than 10 NCC detail records.",
-        variant: "destructive",
-      });
-      return;
-    }
-
+    if (nccDetails.length >= 10) { toast({ title: "Limit Reached", description: "You cannot add more than 10 NCC detail records.", variant: "destructive" }); return; }
     if (!studentData) { toast({ title: "Error", description: "Please save your student details first", variant: "destructive" }); return; }
-
-    const nccPayload = {
-        ...nccForm,
-        student_id: studentData.student_id,
-        camps_attended: nccForm.camps_attended ? parseInt(nccForm.camps_attended, 10) : null,
-        awards_received_in_national_camp: nccForm.awards_received_in_national_camp ? parseInt(nccForm.awards_received_in_national_camp, 10) : null,
-    };
-
+    const nccPayload = { ...nccForm, student_id: studentData.student_id, camps_attended: nccForm.camps_attended ? parseInt(nccForm.camps_attended, 10) : null, awards_received_in_national_camp: nccForm.awards_received_in_national_camp ? parseInt(nccForm.awards_received_in_national_camp, 10) : null };
     const { error } = await supabase.from("ncc_details").insert([nccPayload]);
-
     if (error) { toast({ title: "Error", description: error.message, variant: "destructive" }); }
-    else {
-      toast({ title: "Success", description: "NCC details added successfully" });
-      setNccForm({
-        ncc_wing: "air",
-        regimental_number: "",
-        enrollment_date: "",
-        cadet_rank: "",
-        my_ncc_certification: "N/D",
-        camps_attended: "",
-        awards_received_in_national_camp: "",
-      });
-      await fetchStudentData();
-    }
+    else { toast({ title: "Success", description: "NCC details added successfully" }); setNccForm({ ncc_wing: "air", regimental_number: "", enrollment_date: "", cadet_rank: "", my_ncc_certification: "N/D", camps_attended: "", awards_received_in_national_camp: "" }); await fetchStudentData(); }
+  };
+  
+  const handleNccDelete = async (nccId: string) => {
+    if (!window.confirm("Are you sure you want to delete this NCC record?")) return;
+    const { error } = await supabase.from("ncc_details").delete().eq("ncc_id", nccId);
+    if (error) { toast({ title: "Error Deleting Record", description: error.message, variant: "destructive" }); }
+    else { toast({ title: "Success", description: "NCC record deleted successfully." }); await fetchStudentData(); }
+  };
+
+  const handleNccUpdate = async (nccId: string, updatedData: any) => {
+    const { ncc_id, student_id, created_at, ...updatePayload } = updatedData;
+    if (updatePayload.camps_attended) { updatePayload.camps_attended = parseInt(updatePayload.camps_attended, 10); }
+    if (updatePayload.awards_received_in_national_camp) { updatePayload.awards_received_in_national_camp = parseInt(updatePayload.awards_received_in_national_camp, 10); }
+    const { error } = await supabase.from('ncc_details').update(updatePayload).eq('ncc_id', nccId);
+    if (error) { toast({ title: "Error updating record", description: error.message, variant: "destructive" }); }
+    else { toast({ title: "Success", description: "NCC record updated successfully." }); await fetchStudentData(); }
   };
 
   const handleExpSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-
-    if (experiences.length >= 10) {
-      toast({
-        title: "Limit Reached",
-        description: "You cannot add more than 10 experience records.",
-        variant: "destructive",
-      });
-      return;
-    }
-
+    if (experiences.length >= 10) { toast({ title: "Limit Reached", description: "You cannot add more than 10 experience records.", variant: "destructive" }); return; }
     if (!studentData) { toast({ title: "Error", description: "Please save your personal details first.", variant: "destructive" }); return; }
-    
     const { error } = await supabase.from("placements_internships").insert([{ student_id: studentData.student_id, ...expForm }]);
-    
     if (error) { toast({ title: "Error", description: error.message, variant: "destructive" }); }
-    else {
-      toast({ title: "Success", description: "Experience added successfully" });
-      setExpForm({ experience: "internship", company_name: "", role: "", start_date: "", end_date: "" });
-      await fetchStudentData();
-    }
+    else { toast({ title: "Success", description: "Experience added successfully" }); setExpForm({ experience: "internship", company_name: "", role: "", start_date: "", end_date: "" }); await fetchStudentData(); }
   };
+
+  const handleExpDelete = async (experienceId: string) => {
+    if (!window.confirm("Are you sure you want to delete this experience record?")) return;
+    const { error } = await supabase.from("placements_internships").delete().eq("experience_id", experienceId);
+    if (error) { toast({ title: "Error Deleting Record", description: error.message, variant: "destructive" }); }
+    else { toast({ title: "Success", description: "Experience record deleted successfully." }); await fetchStudentData(); }
+  };
+
+  const handleExpUpdate = async (experienceId: string, updatedData: any) => {
+    const { experience_id, student_id, created_at, ...updatePayload } = updatedData;
+    const { error } = await supabase.from('placements_internships').update(updatePayload).eq('experience_id', experienceId);
+    if (error) { toast({ title: "Error updating record", description: error.message, variant: "destructive" }); }
+    else { toast({ title: "Success", description: "Experience record updated successfully." }); await fetchStudentData(); }
+  };
+
 
   if (authLoading || !user) {
     return null;
@@ -200,6 +187,8 @@ const Profile = () => {
               handleNccSubmit={handleNccSubmit}
               nccDetails={nccDetails}
               isLimitReached={nccDetails.length >= 10}
+              handleNccDelete={handleNccDelete}
+              handleNccUpdate={handleNccUpdate}
             />
           </TabsContent>
           <TabsContent value="experience">
@@ -209,6 +198,8 @@ const Profile = () => {
               handleExpSubmit={handleExpSubmit}
               experiences={experiences}
               isLimitReached={experiences.length >= 10}
+              handleExpDelete={handleExpDelete}
+              handleExpUpdate={handleExpUpdate}
             />
           </TabsContent>
         </Tabs>
@@ -218,4 +209,3 @@ const Profile = () => {
 };
 
 export default Profile;
-
