@@ -1,4 +1,3 @@
-// src/context/AuthContext.tsx
 
 import { createContext, useContext, useEffect, useState } from "react";
 import { supabase } from "@/integrations/supabase/client";
@@ -54,8 +53,9 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
       setIsAdmin(false);
       return;
     }
+    // CORRECTED QUERY: Checks the 'user_roles' table instead of 'students'
     const { data } = await supabase
-      .from("students")
+      .from("user_roles")
       .select("role")
       .eq("user_id", currentUser.id)
       .eq("role", "admin")
