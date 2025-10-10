@@ -82,7 +82,7 @@ export const Navbar = ({ user, isAdmin }: NavbarProps) => {
                 </Button>
                 <Button
                   variant="default"
-                  onClick={() => navigate("/auth")}
+                  onClick={() => navigate("/auth?view=sign-up")}
                   className="transition-all hover:scale-105"
                 >
                   Sign Up

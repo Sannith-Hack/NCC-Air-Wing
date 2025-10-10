@@ -1,5 +1,5 @@
 import { useEffect, useState } from "react";
-import { useNavigate } from "react-router-dom";
+import { useNavigate, useLocation } from "react-router-dom";
 import { Navbar } from "../components/Navbar";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "../components/ui/tabs";
 import { supabase } from "../integrations/supabase/client";
@@ -11,9 +11,10 @@ import { ExperienceTab } from "./ExperienceTab";
 
 const Profile = () => {
   const navigate = useNavigate();
+  const location = useLocation();
   const { toast } = useToast();
   const { user, isAdmin, loading: authLoading } = useAuth();
-  
+
   const [loading, setLoading] = useState(false);
   const [studentData, setStudentData] = useState<any>(null);
   const [nccDetails, setNccDetails] = useState<any[]>([]);
@@ -38,6 +39,10 @@ const Profile = () => {
   const [expForm, setExpForm] = useState({
     experience: "internship", company_name: "", role: "", start_date: "", end_date: "",
   });
+
+  // Get the tab from the URL query parameters
+  const query = new URLSearchParams(location.search);
+  const defaultTab = query.get("tab") || "personal";
 
   useEffect(() => {
     if (!authLoading && !user) {
@@ -171,7 +176,7 @@ const Profile = () => {
       <Navbar user={user} isAdmin={isAdmin} />
       <div className="container mx-auto px-4 py-8">
         <h1 className="text-3xl font-bold mb-6 text-foreground">My Profile</h1>
-        <Tabs defaultValue="personal" className="w-full">
+        <Tabs defaultValue={defaultTab} className="w-full">
           <TabsList className="grid w-full grid-cols-3">
             <TabsTrigger value="personal">Personal Details</TabsTrigger>
             <TabsTrigger value="ncc">NCC Details</TabsTrigger>
