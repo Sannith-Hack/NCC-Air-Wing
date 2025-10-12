@@ -18,6 +18,8 @@ $$;
 
 -- Function to automatically create a student profile when a new user signs up.
 -- This function correctly creates a student profile AND a user role
+-- This is the corrected version of your handle_new_user function
+
 CREATE OR REPLACE FUNCTION public.handle_new_user()
 RETURNS TRIGGER
 LANGUAGE plpgsql
@@ -30,7 +32,8 @@ BEGIN
   VALUES (
     NEW.id,
     NEW.email,
-    NEW.raw_user_meta_data->>'full_name'
+    -- Use the full name if available, otherwise fall back to the email
+    COALESCE(NEW.raw_user_meta_data->>'full_name', NEW.email)
   );
   -- Create the corresponding user role
   INSERT INTO public.user_roles (user_id, role)
@@ -99,4 +102,5 @@ $$ LANGUAGE plpgsql;
 -- Trigger that runs the experience limit check before a new record is inserted.
 CREATE TRIGGER enforce_experience_limit_before_insert
 BEFORE INSERT ON public.placements_internships
+
 FOR EACH ROW EXECUTE FUNCTION public.check_experience_limit();
