@@ -1,25 +1,16 @@
-
-import { createContext, useContext, useEffect, useState } from "react";
+import { createContext, useEffect, useState, useContext } from "react";
 import { supabase } from "@/integrations/supabase/client";
 import { User, Session } from "@supabase/supabase-js";
 
-// Define the shape of the context data
-interface AuthContextType {
+export interface AuthContextType {
   user: User | null;
   session: Session | null;
   isAdmin: boolean;
   loading: boolean;
 }
 
-// Create the context with a default value
-const AuthContext = createContext<AuthContextType>({
-  user: null,
-  session: null,
-  isAdmin: false,
-  loading: true,
-});
+export const AuthContext = createContext<AuthContextType | undefined>(undefined);
 
-// Create the Provider component
 export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
   const [user, setUser] = useState<User | null>(null);
   const [session, setSession] = useState<Session | null>(null);
@@ -27,54 +18,58 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
-    // Check for the initial session
-    supabase.auth.getSession().then(({ data: { session } }) => {
+    console.log("AuthProvider mounted. Kicking off session check.");
+
+    // 1. Get the initial session information
+    supabase.auth.getSession().then(async ({ data: { session } }) => {
+      console.log("Initial session fetched:", session);
       setSession(session);
       setUser(session?.user ?? null);
-      // We will check the role right after getting the user
-      checkRole(session?.user);
-      setLoading(false);
-    });
 
-    // Listen for auth state changes
-    const { data: { subscription } } = supabase.auth.onAuthStateChange((_event, session) => {
-      setSession(session);
-      setUser(session?.user ?? null);
-      // Re-check the role on every auth change (login/logout)
-      checkRole(session?.user);
-      setLoading(false);
-    });
+      // 2. If a user exists, check their admin role
+      if (session?.user) {
+        console.log("User found, checking admin status...");
+        const { data, error } = await supabase.rpc('is_admin');
+        if (error) {
+          console.error("Error during admin check:", error.message);
+          setIsAdmin(false);
+        } else {
+          console.log("Admin status check successful. Is admin:", !!data);
+          setIsAdmin(!!data);
+        }
+      }
 
-    return () => subscription.unsubscribe();
+      // 3. Mark loading as false ONLY after all initial checks are done
+      console.log("Initial auth flow finished. Setting loading to false.");
+      setLoading(false);
+
+      // 4. Now, set up a listener for any FUTURE auth changes
+      const { data: { subscription } } = supabase.auth.onAuthStateChange(
+        async (_event, session) => {
+          console.log("Auth state changed:", _event, session);
+          setSession(session);
+          setUser(session?.user ?? null);
+
+          // Re-check admin status on any change
+          if (session?.user) {
+            const { data } = await supabase.rpc('is_admin');
+            setIsAdmin(!!data);
+          } else {
+            setIsAdmin(false);
+          }
+        }
+      );
+
+      // Return the cleanup function for the listener
+      return () => {
+        console.log("Unsubscribing from auth state changes.");
+        subscription?.unsubscribe();
+      };
+    });
   }, []);
 
-  const checkRole = async (currentUser: User | null | undefined) => {
-    if (!currentUser) {
-      setIsAdmin(false);
-      return;
-    }
-    // CORRECTED QUERY: Checks the 'user_roles' table instead of 'students'
-    const { data } = await supabase
-      .from("user_roles")
-      .select("role")
-      .eq("user_id", currentUser.id)
-      .eq("role", "admin")
-      .maybeSingle();
-    
-    setIsAdmin(!!data);
-  };
+  const value = { user, session, isAdmin, loading };
 
-  const value = {
-    user,
-    session,
-    isAdmin,
-    loading,
-  };
-
+  // Render children only after the initial loading is complete
   return <AuthContext.Provider value={value}>{children}</AuthContext.Provider>;
-};
-
-// Create a custom hook for easy access to the context
-export const useAuth = () => {
-  return useContext(AuthContext);
 };

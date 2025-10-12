@@ -16,27 +16,36 @@ export type Database = {
     Tables: {
       ncc_details: {
         Row: {
+          awards_received_in_national_camp: number | null // ADD THIS
+          camps_attended: number | null // ADD THIS
           cadet_rank: string | null
           created_at: string | null
           enrollment_date: string | null
+          my_ncc_certification: Database["public"]["Enums"]["ncc_certification"] // ADD THIS
           ncc_id: string
           ncc_wing: Database["public"]["Enums"]["ncc_wing_type"]
           regimental_number: string | null
           student_id: string
         }
         Insert: {
+          awards_received_in_national_camp?: number | null // ADD THIS
+          camps_attended?: number | null // ADD THIS
           cadet_rank?: string | null
           created_at?: string | null
           enrollment_date?: string | null
+          my_ncc_certification?: Database["public"]["Enums"]["ncc_certification"] // ADD THIS
           ncc_id?: string
           ncc_wing: Database["public"]["Enums"]["ncc_wing_type"]
           regimental_number?: string | null
           student_id: string
         }
         Update: {
+          awards_received_in_national_camp?: number | null 
+          camps_attended?: number | null 
           cadet_rank?: string | null
           created_at?: string | null
           enrollment_date?: string | null
+          my_ncc_certification?: Database["public"]["Enums"]["ncc_certification"]
           ncc_id?: string
           ncc_wing?: Database["public"]["Enums"]["ncc_wing_type"]
           regimental_number?: string | null
@@ -93,7 +102,7 @@ export type Database = {
           },
         ]
       }
-      students: {
+     students: {
         Row: {
           aadhaar_encrypted: string | null
           aadhaar_number: string | null
@@ -108,6 +117,7 @@ export type Database = {
           pan_number: string | null
           parents_phone_number: string | null
           phone_number: string | null
+          roll_no: string | null // ADD THIS LINE
           student_id: string
           user_id: string
           year: number | null
@@ -126,6 +136,7 @@ export type Database = {
           pan_number?: string | null
           parents_phone_number?: string | null
           phone_number?: string | null
+          roll_no?: string | null // ADD THIS LINE
           student_id?: string
           user_id: string
           year?: number | null
@@ -144,6 +155,7 @@ export type Database = {
           pan_number?: string | null
           parents_phone_number?: string | null
           phone_number?: string | null
+          roll_no?: string | null // ADD THIS LINE
           student_id?: string
           user_id?: string
           year?: number | null
@@ -202,6 +214,10 @@ export type Database = {
           year: number
         }[]
       }
+      is_admin: {
+        Args: Record<string, never> // or {}
+        Returns: boolean
+      }
       has_role: {
         Args: {
           _role: Database["public"]["Enums"]["app_role"]
@@ -245,6 +261,7 @@ export type Database = {
     Enums: {
       app_role: "admin" | "student"
       experience_type: "placement" | "internship"
+      ncc_certification: "A" | "B" | "C" | "Other" | "N/D"
       ncc_wing_type: "air" | "army" | "navy"
     }
     CompositeTypes: {

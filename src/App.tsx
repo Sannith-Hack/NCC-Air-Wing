@@ -1,39 +1,40 @@
-import { Toaster } from "@/components/ui/toaster";
-import { Toaster as Sonner } from "@/components/ui/sonner";
-import { TooltipProvider } from "@/components/ui/tooltip";
-import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { BrowserRouter, Routes, Route } from "react-router-dom";
+import { AuthProvider } from "./context/AuthContext";
+import Layout from "./components/Layout";
 import Index from "./pages/Index";
 import Auth from "./pages/Auth";
 import Profile from "./pages/Profile";
-import { AuthProvider } from "@/context/AuthContext";
 import Admin from "./pages/Admin";
-import Verify from "./pages/Verify";
-import ResetPassword from "./pages/ResetPassword"; // Import the new component
 import NotFound from "./pages/NotFound";
+import Achievements from "./pages/Achievements";
+import Announcements from "./pages/Announcements";
+import Gallery from "./pages/Gallery";
+import ResetPassword from "./pages/ResetPassword";
+import Verify from "./pages/Verify";
+import ScrollToTop from "./components/ScrollToTop"; 
 
-const queryClient = new QueryClient();
-
-const App = () => (
-  <QueryClientProvider client={queryClient}>
-    <TooltipProvider>
-      <AuthProvider>
-        <Toaster />
-        <Sonner />
-        <BrowserRouter>
-          <Routes>
-            <Route path="/" element={<Index />} />
+function App() {
+  return (
+    <AuthProvider>
+      <BrowserRouter>
+        <ScrollToTop />
+        <Routes>
+          <Route element={<Layout />}>
+            <Route index element={<Index />} />
             <Route path="/auth" element={<Auth />} />
             <Route path="/profile" element={<Profile />} />
             <Route path="/admin" element={<Admin />} />
+            <Route path="/achievements" element={<Achievements />} />
+            <Route path="/announcements" element={<Announcements />} />
+            <Route path="/gallery" element={<Gallery />} />
+            <Route path="/reset-password" element={<ResetPassword />} />
             <Route path="/verify" element={<Verify />} />
-            <Route path="/reset-password" element={<ResetPassword />} /> 
             <Route path="*" element={<NotFound />} />
-          </Routes>
-        </BrowserRouter>
-      </AuthProvider>
-    </TooltipProvider>
-  </QueryClientProvider>
-);
+          </Route>
+        </Routes>
+      </BrowserRouter>
+    </AuthProvider>
+  );
+}
 
 export default App;

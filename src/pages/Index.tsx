@@ -1,8 +1,9 @@
 import { useNavigate } from "react-router-dom";
-import { Navbar } from "../components/Navbar";
+import Header from "../components/Header"; // Assuming you are using the new Header
+import Footer from "../components/Footer"; // Assuming you are using the new Footer
 import { Button } from "../components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "../components/ui/card";
-import { useAuth } from "../context/AuthContext";
+import { useAuth } from "../hooks/use-auth";
 import heroBanner from "../assets/ncc-hero-banner.jpg";
 import nccLogo from "../assets/ncc-logo.png";
 
@@ -11,19 +12,20 @@ const Index = () => {
   const { user, isAdmin } = useAuth();
 
   return (
-    <div className="min-h-screen bg-background">
-      <Navbar user={user} isAdmin={isAdmin} />
-
+    // The main div is already handled by your Layout component if you are using it
+    <>
       <div
-        className="relative h-96 flex items-center justify-center"
+        className="relative h-96 flex items-center justify-center" // ✅ This already centers the content
         style={{
+          // ✅ This linear-gradient provides the dark overlay for contrast
           backgroundImage: `linear-gradient(rgba(0, 0, 0, 0.6), rgba(0, 0, 0, 0.6)), url(${heroBanner})`,
           backgroundSize: "cover",
           backgroundPosition: "center",
         }}
       >
         <div className="text-center text-white z-10 px-4">
-          <img src={nccLogo} alt="NCC Logo" className="h-24 w-24 mx-auto mb-6" />
+          {/* ✅ Reduced logo size from h-24 w-24 to h-20 w-20 */}
+          <img src={nccLogo} alt="NCC Logo" className="h-20 w-20 mx-auto mb-4" />
           <h1 className="text-5xl font-bold mb-4">NCC Air Wing</h1>
           <p className="text-2xl mb-8">Student Information Portal</p>
           {!user && (
@@ -101,7 +103,7 @@ const Index = () => {
           </div>
         )}
       </div>
-    </div>
+    </>
   );
 };
 

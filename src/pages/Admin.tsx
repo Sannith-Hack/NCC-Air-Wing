@@ -1,26 +1,19 @@
 import { useEffect, useState } from "react";
 import { useNavigate } from "react-router-dom";
 import * as XLSX from 'xlsx';
-import { Navbar } from "../components/Navbar";
-import { Button } from "../components/ui/button";
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "../components/ui/card";
-import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "../components/ui/table";
-import { Tabs, TabsContent, TabsList, TabsTrigger } from "../components/ui/tabs";
-import { Badge } from "../components/ui/badge";
-import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription, DialogFooter } from "../components/ui/dialog";
-import { Input } from "../components/ui/input";
-import { Label } from "../components/ui/label";
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "../components/ui/select";
-import { supabase } from "../integrations/supabase/client";
-import { useAuth } from "../context/AuthContext";
-import { useToast } from "../hooks/use-toast";
+import { Button } from "@/components/ui/button";
+import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
+import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
+import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
+import { Badge } from "@/components/ui/badge";
+import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription, DialogFooter } from "@/components/ui/dialog";
+import { Input } from "@/components/ui/input";
+import { Label } from "@/components/ui/label";
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
+import { supabase } from "@/integrations/supabase/client";
+import { useAuth } from "@/hooks/use-auth";
+import { useToast } from "@/hooks/use-toast";
 import { Download, Edit, Trash2 } from "lucide-react";
-
-// Helper to format dates for input fields
-const formatDateForInput = (dateString: string) => {
-    if (!dateString) return "";
-    return new Date(dateString).toISOString().split('T')[0];
-}
 
 const Admin = () => {
   const navigate = useNavigate();
@@ -32,7 +25,6 @@ const Admin = () => {
   const [experiences, setExperiences] = useState<any[]>([]);
   const [loadingData, setLoadingData] = useState(true);
 
-  // State for the Edit Modal
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [editingRecord, setEditingRecord] = useState<any | null>(null);
   const [editingType, setEditingType] = useState<'student' | 'ncc' | 'experience' | null>(null);
@@ -59,33 +51,24 @@ const Admin = () => {
     setLoadingData(false);
   };
 
-  // --- CRUD Handlers ---
-
-  const handleUpdate = async (id: string, data: any, type: string) => {
-    let tableName = '';
-    let idColumn = '';
+  const handleUpdate = async (id: string, data: any, type: 'student' | 'ncc' | 'experience') => {
+    const { created_at, students, ...updatePayload } = data;
+    let error;
 
     switch(type) {
         case 'student':
-            tableName = 'students';
-            idColumn = 'student_id';
+            const { student_id, ...studentPayload } = updatePayload;
+            ({ error } = await supabase.from('students').update(studentPayload).eq('student_id', id));
             break;
         case 'ncc':
-            tableName = 'ncc_details';
-            idColumn = 'ncc_id';
+            const { ncc_id, ...nccPayload } = updatePayload;
+            ({ error } = await supabase.from('ncc_details').update(nccPayload).eq('ncc_id', id));
             break;
         case 'experience':
-            tableName = 'placements_internships';
-            idColumn = 'experience_id';
+            const { experience_id, ...expPayload } = updatePayload;
+            ({ error } = await supabase.from('placements_internships').update(expPayload).eq('experience_id', id));
             break;
-        default: return;
     }
-    
-    // Remove read-only/relational fields before update
-    const { created_at, students, ...updatePayload } = data;
-    const { [idColumn]: pk, ...finalPayload } = updatePayload;
-
-    const { error } = await supabase.from(tableName).update(finalPayload).eq(idColumn, id);
 
     if (error) { toast({ title: `Error updating ${type}`, description: error.message, variant: "destructive" }); }
     else { toast({ title: "Success", description: `${type.charAt(0).toUpperCase() + type.slice(1)} record updated.` }); }
@@ -94,28 +77,22 @@ const Admin = () => {
     setIsModalOpen(false);
   };
 
-  const handleDelete = async (id: string, type: string) => {
+  const handleDelete = async (id: string, type: 'student' | 'ncc' | 'experience') => {
      if (!window.confirm(`Are you sure you want to delete this ${type} record? This action cannot be undone.`)) return;
+    let error;
 
-    let tableName = '';
-    let idColumn = '';
      switch(type) {
         case 'student':
-            tableName = 'students';
-            idColumn = 'student_id';
+            ({ error } = await supabase.from('students').delete().eq('student_id', id));
             break;
         case 'ncc':
-            tableName = 'ncc_details';
-            idColumn = 'ncc_id';
+            ({ error } = await supabase.from('ncc_details').delete().eq('ncc_id', id));
             break;
         case 'experience':
-            tableName = 'placements_internships';
-            idColumn = 'experience_id';
+            ({ error } = await supabase.from('placements_internships').delete().eq('experience_id', id));
             break;
-        default: return;
     }
 
-    const { error } = await supabase.from(tableName).delete().eq(idColumn, id);
     if (error) { toast({ title: `Error deleting ${type}`, description: error.message, variant: "destructive" }); }
     else { toast({ title: "Success", description: `${type.charAt(0).toUpperCase() + type.slice(1)} record deleted.` }); }
 
@@ -130,7 +107,7 @@ const Admin = () => {
   };
 
   const handleDownloadExcel = () => {
-    const studentsSheet = students.map(({ user_id, student_id, role, ...rest }) => rest);
+    const studentsSheet = students.map(({ user_id, student_id, ...rest }) => rest);
     const nccSheet = nccDetails.map(ncc => ({ "Student Name": ncc.students?.name || 'N/A', "Student Email": ncc.students?.email || 'N/A', "NCC Wing": ncc.ncc_wing, "Regimental Number": ncc.regimental_number, "Cadet Rank": ncc.cadet_rank, "Certification": ncc.my_ncc_certification, "Camps Attended": ncc.camps_attended, "National Camp Awards": ncc.awards_received_in_national_camp, "Enrollment Date": ncc.enrollment_date, }));
     const experiencesSheet = experiences.map(exp => ({ "Student Name": exp.students?.name || 'N/A', "Student Email": exp.students?.email || 'N/A', "Type": exp.experience, "Company Name": exp.company_name, "Role": exp.role, "Start Date": exp.start_date, "End Date": exp.end_date, }));
     const wb = XLSX.utils.book_new();
@@ -147,8 +124,6 @@ const Admin = () => {
 
   return (
     <>
-    <div className="min-h-screen bg-background">
-      <Navbar user={user} isAdmin={isAdmin} />
       <div className="container mx-auto px-4 py-8">
         <div className="mb-6 flex justify-between items-center">
           <div>
@@ -166,62 +141,119 @@ const Admin = () => {
           
           <TabsContent value="students">
             <Card>
-              <CardHeader><CardTitle>All Students</CardTitle><CardDescription>Complete student records</CardDescription></CardHeader>
+              <CardHeader>
+                <CardTitle>All Students</CardTitle>
+                <CardDescription>A complete list of all registered students.</CardDescription>
+              </CardHeader>
               <CardContent>
-                {loadingData ? <p className="text-center text-muted-foreground">Loading data...</p> : (
-                  <div className="overflow-x-auto">
-                    <Table>
-                      <TableHeader><TableRow><TableHead>Name</TableHead><TableHead>Email</TableHead><TableHead>Roll No</TableHead><TableHead>Branch</TableHead><TableHead>Year</TableHead><TableHead>Phone</TableHead><TableHead className="text-right">Actions</TableHead></TableRow></TableHeader>
-                      <TableBody>
-                        {students.map((s) => (<TableRow key={s.student_id}><TableCell className="font-medium">{s.name}</TableCell><TableCell>{s.email}</TableCell><TableCell>{s.roll_no || "N/A"}</TableCell><TableCell>{s.branch || "N/A"}</TableCell><TableCell>{s.year || "N/A"}</TableCell><TableCell>{s.phone_number || "N/A"}</TableCell><TableCell className="text-right"><Button variant="outline" size="sm" onClick={() => handleEditClick(s, 'student')}><Edit className="h-4 w-4" /></Button></TableCell></TableRow>))}
-                      </TableBody>
-                    </Table>
-                  </div>
-                )}
+                <Table>
+                  <TableHeader>
+                    <TableRow>
+                      <TableHead>Name</TableHead>
+                      <TableHead>Email</TableHead>
+                      <TableHead>Branch</TableHead>
+                      <TableHead>Year</TableHead>
+                      <TableHead>Roll No.</TableHead>
+                      <TableHead className="text-right">Actions</TableHead>
+                    </TableRow>
+                  </TableHeader>
+                  <TableBody>
+                    {students.map((student) => (
+                      <TableRow key={student.student_id}>
+                        <TableCell>{student.name}</TableCell>
+                        <TableCell>{student.email}</TableCell>
+                        <TableCell>{student.branch}</TableCell>
+                        <TableCell>{student.year}</TableCell>
+                        <TableCell>{student.roll_no}</TableCell>
+                        <TableCell className="text-right">
+                          <Button variant="ghost" size="icon" onClick={() => handleEditClick(student, 'student')}>
+                            <Edit className="h-4 w-4" />
+                          </Button>
+                        </TableCell>
+                      </TableRow>
+                    ))}
+                  </TableBody>
+                </Table>
               </CardContent>
             </Card>
           </TabsContent>
 
-           <TabsContent value="ncc">
+          <TabsContent value="ncc">
             <Card>
-              <CardHeader><CardTitle>NCC Details</CardTitle><CardDescription>All NCC enrollments</CardDescription></CardHeader>
+              <CardHeader>
+                <CardTitle>NCC Details</CardTitle>
+                <CardDescription>All recorded NCC details for students.</CardDescription>
+              </CardHeader>
               <CardContent>
-                {loadingData ? <p className="text-center text-muted-foreground">Loading data...</p> : (
-                   <div className="overflow-x-auto">
-                    <Table>
-                      <TableHeader><TableRow><TableHead>Student</TableHead><TableHead>Reg. Number</TableHead><TableHead>Rank</TableHead><TableHead>Certification</TableHead><TableHead className="text-right">Actions</TableHead></TableRow></TableHeader>
-                      <TableBody>
-                        {nccDetails.map((ncc: any) => (<TableRow key={ncc.ncc_id}><TableCell className="font-medium">{ncc.students?.name || "Unknown"}</TableCell><TableCell>{ncc.regimental_number || "N/A"}</TableCell><TableCell>{ncc.cadet_rank || "N/A"}</TableCell><TableCell>{ncc.my_ncc_certification || "N/A"}</TableCell><TableCell className="text-right"><Button variant="outline" size="sm" onClick={() => handleEditClick(ncc, 'ncc')}><Edit className="h-4 w-4" /></Button></TableCell></TableRow>))}
-                      </TableBody>
-                    </Table>
-                  </div>
-                )}
+                <Table>
+                  <TableHeader>
+                    <TableRow>
+                      <TableHead>Student</TableHead>
+                      <TableHead>Regimental No.</TableHead>
+                      <TableHead>Rank</TableHead>
+                      <TableHead>Certification</TableHead>
+                      <TableHead className="text-right">Actions</TableHead>
+                    </TableRow>
+                  </TableHeader>
+                  <TableBody>
+                    {nccDetails.map((ncc) => (
+                      <TableRow key={ncc.ncc_id}>
+                        <TableCell>{ncc.students?.name}</TableCell>
+                        <TableCell>{ncc.regimental_number}</TableCell>
+                        <TableCell>{ncc.cadet_rank}</TableCell>
+                        <TableCell><Badge>{ncc.my_ncc_certification}</Badge></TableCell>
+                        <TableCell className="text-right">
+                          <Button variant="ghost" size="icon" onClick={() => handleEditClick(ncc, 'ncc')}>
+                            <Edit className="h-4 w-4" />
+                          </Button>
+                        </TableCell>
+                      </TableRow>
+                    ))}
+                  </TableBody>
+                </Table>
               </CardContent>
             </Card>
           </TabsContent>
 
-           <TabsContent value="experience">
+          <TabsContent value="experience">
             <Card>
-              <CardHeader><CardTitle>Placements & Internships</CardTitle><CardDescription>All student experiences</CardDescription></CardHeader>
+              <CardHeader>
+                <CardTitle>Placements & Internships</CardTitle>
+                <CardDescription>All recorded work experiences for students.</CardDescription>
+              </CardHeader>
               <CardContent>
-                {loadingData ? <p className="text-center text-muted-foreground">Loading data...</p> : (
-                  <div className="overflow-x-auto">
-                    <Table>
-                      <TableHeader><TableRow><TableHead>Student</TableHead><TableHead>Type</TableHead><TableHead>Company</TableHead><TableHead>Role</TableHead><TableHead className="text-right">Actions</TableHead></TableRow></TableHeader>
-                      <TableBody>
-                        {experiences.map((exp: any) => (<TableRow key={exp.experience_id}><TableCell className="font-medium">{exp.students?.name || "Unknown"}</TableCell><TableCell><Badge variant={exp.experience === "placement" ? "default" : "secondary"}>{exp.experience}</Badge></TableCell><TableCell>{exp.company_name}</TableCell><TableCell>{exp.role || "N/A"}</TableCell><TableCell className="text-right"><Button variant="outline" size="sm" onClick={() => handleEditClick(exp, 'experience')}><Edit className="h-4 w-4" /></Button></TableCell></TableRow>))}
-                      </TableBody>
-                    </Table>
-                  </div>
-                )}
+                <Table>
+                  <TableHeader>
+                    <TableRow>
+                      <TableHead>Student</TableHead>
+                      <TableHead>Type</TableHead>
+                      <TableHead>Company</TableHead>
+                      <TableHead>Role</TableHead>
+                      <TableHead className="text-right">Actions</TableHead>
+                    </TableRow>
+                  </TableHeader>
+                  <TableBody>
+                    {experiences.map((exp) => (
+                      <TableRow key={exp.experience_id}>
+                        <TableCell>{exp.students?.name}</TableCell>
+                        <TableCell><Badge variant={exp.experience === 'placement' ? 'default' : 'secondary'}>{exp.experience}</Badge></TableCell>
+                        <TableCell>{exp.company_name}</TableCell>
+                        <TableCell>{exp.role}</TableCell>
+                        <TableCell className="text-right">
+                          <Button variant="ghost" size="icon" onClick={() => handleEditClick(exp, 'experience')}>
+                            <Edit className="h-4 w-4" />
+                          </Button>
+                        </TableCell>
+                      </TableRow>
+                    ))}
+                  </TableBody>
+                </Table>
               </CardContent>
             </Card>
           </TabsContent>
         </Tabs>
       </div>
-    </div>
 
-    {/* --- Universal Edit Modal --- */}
     <Dialog open={isModalOpen} onOpenChange={setIsModalOpen}>
         <DialogContent>
             <DialogHeader>
