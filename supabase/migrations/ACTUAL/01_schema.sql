@@ -8,47 +8,40 @@ CREATE TYPE public.experience_type AS ENUM ('placement', 'internship');
 CREATE TYPE public.ncc_certification AS ENUM ('A', 'B','C','Other','N/D');
 
 -- Create Students table
-CREATE TABLE public.students (
-    student_id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
-    user_id UUID REFERENCES auth.users(id) ON DELETE CASCADE NOT NULL UNIQUE,
-    role app_role NOT NULL DEFAULT 'student',
-    name VARCHAR(255) NOT NULL,
-    email VARCHAR(255) NOT NULL UNIQUE,
-    branch VARCHAR(100),
-    year INT,
-    roll_no TEXT UNIQUE,
-    address TEXT,
-    phone_number VARCHAR(15),
-    parents_phone_number VARCHAR(15),
-    aadhaar_number VARCHAR(12) UNIQUE,
-    pan_number VARCHAR(10) UNIQUE,
-    account_number VARCHAR(20),
-    created_at TIMESTAMP WITH TIME ZONE DEFAULT NOW(),
-    UNIQUE(user_id, role)
-);
-
--- Create NCC_Details table
-CREATE TABLE public.ncc_details (
-    ncc_id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
-    student_id UUID NOT NULL REFERENCES public.students(student_id) ON DELETE CASCADE,
-    ncc_wing ncc_wing_type NOT NULL DEFAULT 'air',
-    regimental_number VARCHAR(50) UNIQUE,
-    my_ncc_certification ncc_certification NOT NULL DEFAULT 'N/D', 
-    camps_attended INT,
-    awards_received_in_national_camp INT,
-    enrollment_date DATE,
-    cadet_rank VARCHAR(50),
-    created_at TIMESTAMP WITH TIME ZONE DEFAULT NOW()
-);
-
--- Create Placements_Internships table
 CREATE TABLE public.placements_internships (
-    experience_id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
-    student_id UUID REFERENCES public.students(student_id) ON DELETE CASCADE NOT NULL,
-    experience experience_type NOT NULL,
-    company_name VARCHAR(255) NOT NULL,
-    role VARCHAR(100),
-    start_date DATE,
-    end_date DATE,
-    created_at TIMESTAMP WITH TIME ZONE DEFAULT NOW()
+  experience_id uuid NOT NULL DEFAULT gen_random_uuid(),
+  student_id uuid NOT NULL,
+  experience experience_type NOT NULL
+  company_name character varying NOT NULL,
+  role character varying,
+  start_date date,
+  end_date date,
+  created_at timestamp with time zone DEFAULT now(),
+  CONSTRAINT placements_internships_pkey PRIMARY KEY (experience_id),
+  CONSTRAINT placements_internships_student_id_fkey FOREIGN KEY (student_id) REFERENCES public.students(student_id)
+);
+CREATE TABLE public.students (
+  student_id uuid NOT NULL DEFAULT gen_random_uuid(),
+  user_id uuid NOT NULL UNIQUE,
+  name character varying NOT NULL,
+  email character varying NOT NULL UNIQUE,
+  branch character varying,
+  year integer,
+  address text,
+  phone_number character varying,
+  parents_phone_number character varying,
+  aadhaar_number character varying UNIQUE,
+  pan_number character varying UNIQUE,
+  account_number character varying,
+  created_at timestamp with time zone DEFAULT now(),
+  roll_no text UNIQUE,
+  CONSTRAINT students_pkey PRIMARY KEY (student_id),
+  CONSTRAINT students_user_id_fkey FOREIGN KEY (user_id) REFERENCES auth.users(id)
+);
+CREATE TABLE public.user_roles (
+  id uuid NOT NULL DEFAULT gen_random_uuid(),
+  user_id uuid NOT NULL UNIQUE,
+  role USER-DEFINED NOT NULL DEFAULT 'student'::app_role,
+  CONSTRAINT user_roles_pkey PRIMARY KEY (id),
+  CONSTRAINT user_roles_user_id_fkey FOREIGN KEY (user_id) REFERENCES auth.users(id)
 );

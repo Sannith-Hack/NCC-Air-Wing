@@ -11,12 +11,13 @@ SET search_path = public
 AS $$
   SELECT EXISTS (
     SELECT 1
-    FROM public.students
+    FROM public.user_roles
     WHERE user_id = _user_id AND role = _role
   )
 $$;
 
 -- Function to automatically create a student profile when a new user signs up.
+-- This function correctly creates a student profile AND a user role
 CREATE OR REPLACE FUNCTION public.handle_new_user()
 RETURNS TRIGGER
 LANGUAGE plpgsql
@@ -24,16 +25,28 @@ SECURITY DEFINER
 SET search_path = public
 AS $$
 BEGIN
-  INSERT INTO public.students (user_id, role, name, email)
+  -- Create the student profile
+  INSERT INTO public.students (user_id, email, name)
   VALUES (
     NEW.id,
-    'student',
-    NEW.raw_user_meta_data->>'full_name',
-    NEW.email
+    NEW.email,
+    NEW.raw_user_meta_data->>'full_name'
+  );
+  -- Create the corresponding user role
+  INSERT INTO public.user_roles (user_id, role)
+  VALUES (
+    NEW.id,
+    'student'
   );
   RETURN NEW;
 END;
 $$;
+
+-- This trigger calls the function above after a new user signs up
+CREATE TRIGGER on_auth_user_created
+  AFTER INSERT ON auth.users
+  FOR EACH ROW EXECUTE PROCEDURE public.handle_new_user();
+
 
 -- Trigger that calls handle_new_user() after a new user is created in auth.users.
 CREATE TRIGGER on_auth_user_created
