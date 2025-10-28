@@ -10,9 +10,20 @@ interface PersonalDetailsTabProps {
   setFormData: (data: any) => void;
   handleStudentSubmit: (e: React.FormEvent) => void;
   loading: boolean;
+  isDirty: boolean;
+  isNewUser: boolean;
 }
 
-export const PersonalDetailsTab = ({ formData, setFormData, handleStudentSubmit, loading }: PersonalDetailsTabProps) => {
+export const PersonalDetailsTab = ({
+  formData,
+  setFormData,
+  handleStudentSubmit,
+  loading,
+  isDirty,
+  isNewUser
+}: PersonalDetailsTabProps) => {
+// --- END UPDATE ---
+
   return (
     <Card>
       <CardHeader>
@@ -39,7 +50,7 @@ export const PersonalDetailsTab = ({ formData, setFormData, handleStudentSubmit,
                 <SelectContent>
                   <SelectItem value="CSE">CSE</SelectItem>
                   <SelectItem value="CSD">CSD</SelectItem>
-                  <SelectItem value="IT">IT</SelectItem>
+                  <SelectItem value= "IT">IT</SelectItem>
                   <SelectItem value="MECH">MECH</SelectItem>
                   <SelectItem value="EEE">EEE</SelectItem>
                   <SelectItem value="ECE">ECE</SelectItem>
@@ -81,9 +92,18 @@ export const PersonalDetailsTab = ({ formData, setFormData, handleStudentSubmit,
               <Input id="account" value={formData.account_number} onChange={(e) => setFormData({ ...formData, account_number: e.target.value })} />
             </div>
           </div>
-          <Button type="submit" disabled={loading} className="w-full">
+          
+          {/* --- UPDATE: Modified disabled logic --- */}
+          {/* Button is disabled if:
+            1. It's currently loading (saving).
+            2. It's NOT a new user AND the form is NOT dirty (no changes made).
+            (A new user should always be able to save their initial profile)
+          */}
+          <Button type="submit" disabled={loading || (!isNewUser && !isDirty)} className="w-full">
             {loading ? "Saving..." : "Save Profile"}
           </Button>
+          {/* --- END UPDATE --- */}
+
         </form>
       </CardContent>
     </Card>

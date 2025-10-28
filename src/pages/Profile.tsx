@@ -1,4 +1,4 @@
-import { useEffect, useState } from "react";
+import { useEffect, useState, useRef } from "react";
 import { useNavigate, useLocation } from "react-router-dom";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "../components/ui/tabs";
 import { supabase } from "../integrations/supabase/client";
@@ -19,6 +19,7 @@ const Profile = () => {
   const location = useLocation();
   const { toast } = useToast();
   const { user, loading: authLoading } = useAuth();
+  const hasFetched = useRef(false);
   
   const [dataLoading, setDataLoading] = useState(true);
   const [studentData, setStudentData] = useState<any>(null);
@@ -28,6 +29,9 @@ const Profile = () => {
   const query = new URLSearchParams(location.search);
   const initialTab = query.get("tab") || "personal";
   const [activeTab, setActiveTab] = useState(initialTab);
+
+  const [originalFormData, setOriginalFormData] = useState<any>(null);
+  const [isFormDirty, setIsFormDirty] = useState(false);
 
   const [formData, setFormData] = useState({
     name: "", email: "", branch: "", year: "", roll_no: "", address: "",
@@ -48,11 +52,20 @@ const Profile = () => {
     if (!authLoading) {
       if (!user) {
         navigate("/auth");
-      } else {
+        hasFetched.current = false;
+      } else if (user && !hasFetched.current) {
         fetchStudentData();
+        hasFetched.current = true;
       }
     }
   }, [user, authLoading, navigate]);
+
+  useEffect(() => {
+    if (originalFormData) {
+      const hasChanged = JSON.stringify(formData) !== JSON.stringify(originalFormData);
+      setIsFormDirty(hasChanged);
+    }
+  }, [formData, originalFormData]);
 
   const fetchStudentData = async () => {
     if (!user) return;
@@ -67,12 +80,15 @@ const Profile = () => {
     
     if (student) {
       setStudentData(student);
-      setFormData({
+      
+      const originalData = {
         name: student.name || "", email: student.email || "", branch: student.branch || "",
         year: student.year?.toString() || "", roll_no: student.roll_no || "", address: student.address || "",
         phone_number: student.phone_number || "", parents_phone_number: student.parents_phone_number || "",
         aadhaar_number: student.aadhaar_number || "", pan_number: student.pan_number || "", account_number: student.account_number || "",
-      });
+      };
+      setFormData(originalData);
+      setOriginalFormData(originalData); 
 
       const { data: ncc } = await supabase.from("ncc_details").select("*").eq("student_id", student.student_id);
       setNccDetails(ncc || []);
@@ -83,7 +99,15 @@ const Profile = () => {
       if (initialTab !== 'personal') setActiveTab(initialTab);
 
     } else {
-      setFormData((prev) => ({ ...prev, name: user.user_metadata?.full_name || user.email || "", email: user.email || "" }));
+      const initialDataForNewUser = {
+        name: user.user_metadata?.full_name || user.email || "",
+        email: user.email || "",
+        branch: "", year: "", roll_no: "", address: "",
+        phone_number: "", parents_phone_number: "", aadhaar_number: "",
+        pan_number: "", account_number: "",
+      };
+      setFormData(initialDataForNewUser);
+      setOriginalFormData(initialDataForNewUser); 
       setActiveTab('personal');
     }
     setDataLoading(false);
@@ -92,6 +116,12 @@ const Profile = () => {
   const handleStudentSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!user) return;
+
+    if (studentData && !isFormDirty) {
+      toast({ title: "No Changes", description: "You haven't made any changes to save." });
+      return; 
+    }
+
     setDataLoading(true);
 
     const studentPayload = {
@@ -122,16 +152,40 @@ const Profile = () => {
     setDataLoading(false);
   };
   
+  // --- THIS FUNCTION IS UPDATED ---
   const handleNccSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     if (nccDetails.length >= 10) { toast({ title: "Limit Reached", description: "You cannot add more than 10 NCC records.", variant: "destructive" }); return; }
     if (!studentData) { toast({ title: "Error", description: "Please save your student details first", variant: "destructive" }); return; }
 
-    // This is the corrected nccPayload
+    // --- NEW ROBUST VALIDATION BLOCK ---
+    // 1. Get raw value and normalize it (trim, and convert empty/whitespace string to null)
+    const rawRegNum = nccForm.regimental_number;
+    const finalRegNum = (rawRegNum && rawRegNum.trim() !== "") ? rawRegNum.trim() : null;
+
+    // 2. Check if this normalized value already exists in our state
+    const isDuplicate = nccDetails.some(
+      (detail) => detail.regimental_number === finalRegNum
+    );
+    
+    // 3. If it's a duplicate, show an error and stop
+    if (isDuplicate) {
+      toast({
+        title: "Duplicate Record",
+        description: finalRegNum
+          ? "A record with this regimental number already exists."
+          : "A record with no regimental number already exists.",
+        variant: "destructive",
+      });
+      return; // Stop the submission
+    }
+    // --- END OF VALIDATION BLOCK ---
+
+    // 4. Create payload using the normalized value
     const nccPayload: NccInsert = {
       student_id: studentData.student_id,
       ncc_wing: nccForm.ncc_wing || "air",
-      regimental_number: nccForm.regimental_number || null,
+      regimental_number: finalRegNum, // Use the normalized value
       enrollment_date: nccForm.enrollment_date || null,
       cadet_rank: nccForm.cadet_rank || null,
       my_ncc_certification: nccForm.my_ncc_certification || "N/D",
@@ -146,7 +200,7 @@ const Profile = () => {
     } else {
       toast({ title: "Success", description: "NCC details added successfully" });
       setNccForm({ ncc_wing: "air", regimental_number: "", enrollment_date: "", cadet_rank: "", my_ncc_certification: "N/D", camps_attended: 0, awards_received_in_national_camp: 0 });
-      await fetchStudentData();
+      await fetchStudentData(); // Re-fetch to update the list
     }
   };
   
@@ -160,8 +214,36 @@ const Profile = () => {
     }
   };
 
+  // --- THIS FUNCTION IS ALSO UPDATED ---
   const handleNccUpdate = async (nccId: string, updatedData: any) => {
+    // --- NEW VALIDATION BLOCK FOR UPDATES ---
+    // 1. Normalize the incoming regimental number
+    const rawRegNum = updatedData.regimental_number;
+    const finalRegNum = (rawRegNum && rawRegNum.trim() !== "") ? rawRegNum.trim() : null;
+
+    // 2. Check for duplicates *that are not the record we are currently editing*
+    const isDuplicate = nccDetails.some(
+      (detail) =>
+        detail.regimental_number === finalRegNum && // It matches the new number
+        detail.ncc_id !== nccId                       // AND it's not the same record
+    );
+
+    // 3. If duplicate, show error and stop
+    if (isDuplicate) {
+      toast({
+        title: "Duplicate Record",
+        description: "Another record with this regimental number already exists.",
+        variant: "destructive",
+      });
+      return; // Stop the update
+    }
+    // --- END OF VALIDATION BLOCK ---
+
+    // 4. Prepare payload
     const { ncc_id, student_id, created_at, ...payload } = updatedData;
+    payload.regimental_number = finalRegNum; // Use the normalized value
+
+    // 5. Submit update
     const { error } = await supabase.from("ncc_details").update(payload).eq("ncc_id", nccId);
     if (error) {
       toast({ title: "Error updating record", description: error.message, variant: "destructive" });
@@ -176,7 +258,6 @@ const Profile = () => {
     if (experiences.length >= 10) { toast({ title: "Limit Reached", description: "You cannot add more than 10 experience records.", variant: "destructive" }); return; }
     if (!studentData) { toast({ title: "Error", description: "Please save your personal details first.", variant: "destructive" }); return; }
 
-    // This is the corrected expPayload
     const expPayload: ExperienceInsert = {
       student_id: studentData.student_id,
       experience: expForm.experience || "internship",
@@ -246,7 +327,14 @@ const Profile = () => {
           <TabsTrigger value="experience" disabled={!studentData}>Experience</TabsTrigger>
         </TabsList>
         <TabsContent value="personal">
-          <PersonalDetailsTab formData={formData} setFormData={setFormData} handleStudentSubmit={handleStudentSubmit} loading={dataLoading} />
+          <PersonalDetailsTab
+            formData={formData}
+            setFormData={setFormData}
+            handleStudentSubmit={handleStudentSubmit}
+            loading={dataLoading}
+            isDirty={isFormDirty}
+            isNewUser={!studentData}
+          />
         </TabsContent>
         <TabsContent value="ncc">
           <NccDetailsTab
