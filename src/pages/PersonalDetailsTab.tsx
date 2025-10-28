@@ -3,6 +3,7 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 
 interface PersonalDetailsTabProps {
   formData: any;
@@ -31,7 +32,20 @@ export const PersonalDetailsTab = ({ formData, setFormData, handleStudentSubmit,
             </div>
             <div>
               <Label htmlFor="branch">Branch</Label>
-              <Input id="branch" value={formData.branch} onChange={(e) => setFormData({ ...formData, branch: e.target.value })} />
+              <Select value={formData.branch} onValueChange={(value) => setFormData({ ...formData, branch: value })}>
+                <SelectTrigger id="branch">
+                  <SelectValue placeholder="Select a branch" />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="CSE">CSE</SelectItem>
+                  <SelectItem value="CSD">CSD</SelectItem>
+                  <SelectItem value="IT">IT</SelectItem>
+                  <SelectItem value="MECH">MECH</SelectItem>
+                  <SelectItem value="EEE">EEE</SelectItem>
+                  <SelectItem value="ECE">ECE</SelectItem>
+                  <SelectItem value="CIVIL">CIVIL</SelectItem>
+                </SelectContent>
+              </Select>
             </div>
             {/* Add Roll Number input field */}
             <div>
