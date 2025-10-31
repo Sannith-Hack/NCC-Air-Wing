@@ -182,6 +182,93 @@ export type Database = {
           user_id?: string
         }
         Relationships: []
+      },
+      achievements: {
+        Row: {
+          id: string
+          created_at: string | null
+          achievement_title: string
+          cadet_name: string
+          rank: string | null
+          event: string | null
+          year: string | null
+          image: string | null
+        }
+        Insert: {
+          id?: string
+          created_at?: string | null
+          achievement_title: string
+          cadet_name: string
+          rank?: string | null
+          event?: string | null
+          year?: string | null
+          image?: string | null
+        }
+        Update: {
+          id?: string
+          created_at?: string | null
+          achievement_title?: string
+          cadet_name?: string
+          rank?: string | null
+          event?: string | null
+          year?: string | null
+          image?: string | null
+        }
+        Relationships: []
+      },
+      announcements: {
+        Row: {
+          id: string
+          created_at: string | null
+          title: string
+          description: string | null
+          date: string | null
+          tag: string | null
+          tag_color: string | null
+        }
+        Insert: {
+          id?: string
+          created_at?: string | null
+          title: string
+          description?: string | null
+          date?: string | null
+          tag?: string | null
+          tag_color?: string | null
+        }
+        Update: {
+          id?: string
+          created_at?: string | null
+          title?: string
+          description?: string | null
+          date?: string | null
+          tag?: string | null
+          tag_color?: string | null
+        }
+        Relationships: []
+      },
+      gallery: {
+        Row: {
+          id: string
+          created_at: string | null
+          src: string
+          event: string | null
+          date: string | null
+        }
+        Insert: {
+          id?: string
+          created_at?: string | null
+          src: string
+          event?: string | null
+          date?: string | null
+        }
+        Update: {
+          id?: string
+          created_at?: string | null
+          src?: string
+          event?: string | null
+          date?: string | null
+        }
+        Relationships: []
       }
     }
     Views: {

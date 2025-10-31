@@ -1,15 +1,27 @@
-import { useState } from 'react';
+import { useEffect, useState } from 'react';
 import Lightbox from "yet-another-react-lightbox";
 import "yet-another-react-lightbox/styles.css";
-import { Button } from '@/components/ui/button';
-import { ArrowRight } from 'lucide-react';
-import galleryData from '@/data/gallery.json';
+import { supabase } from '@/integrations/supabase/client';
 
 const Gallery = () => {
+  const [gallery, setGallery] = useState<any[]>([]);
   const [open, setOpen] = useState(false);
   const [index, setIndex] = useState(0);
 
-  const slides = galleryData.map(item => ({ src: item.src }));
+  useEffect(() => {
+    const fetchGallery = async () => {
+      const { data, error } = await supabase.from('gallery').select('*').order('created_at', { ascending: false });
+      if (error) {
+        console.error('Error fetching gallery:', error);
+      } else {
+        setGallery(data);
+      }
+    };
+
+    fetchGallery();
+  }, []);
+
+  const slides = gallery.map(item => ({ src: item.src }));
 
   const openLightbox = (imageIndex: number) => {
     setIndex(imageIndex);
@@ -32,7 +44,7 @@ const Gallery = () => {
 
           {/* Image Grid */}
           <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-6">
-            {galleryData.map((item, idx) => (
+            {gallery.map((item, idx) => (
               <div
                 key={item.id}
                 className="group relative cursor-pointer overflow-hidden rounded-lg shadow-md aspect-square"

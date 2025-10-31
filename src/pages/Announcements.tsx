@@ -1,8 +1,23 @@
+import { useEffect, useState } from 'react';
 import { Badge } from "@/components/ui/badge";
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
-import announcements from "@/data/announcements.json";
+import { supabase } from '@/integrations/supabase/client';
 
 const Announcements = () => {
+  const [announcements, setAnnouncements] = useState<any[]>([]);
+
+  useEffect(() => {
+    const fetchAnnouncements = async () => {
+      const { data, error } = await supabase.from('announcements').select('*').order('date', { ascending: false });
+      if (error) {
+        console.error('Error fetching announcements:', error);
+      } else {
+        setAnnouncements(data);
+      }
+    };
+
+    fetchAnnouncements();
+  }, []);
   return (
     <div className="bg-gray-50 min-h-screen">
       <div className="container mx-auto px-4 py-8 md:py-12">
