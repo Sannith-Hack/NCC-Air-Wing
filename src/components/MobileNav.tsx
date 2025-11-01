@@ -8,6 +8,7 @@ import { useToast } from "@/hooks/use-toast";
 import { supabase } from "@/integrations/supabase/client";
 import { User } from "@supabase/supabase-js";
 import { useAuthModal } from '@/hooks/use-auth-modal';
+import { isExternal } from "util/types";
 
 interface MobileNavProps {
   user: User | null;
@@ -33,10 +34,11 @@ const MobileNav = ({ user, isAdmin }: MobileNavProps) => {
 
   // 2. Define navigation links
   const navLinks = [
-    { href: "/", label: "Home" },
+    { href: "/", label: "Home", isExternal: false },
     { href: "/announcements", label: "Announcements" },
     { href: "/achievements", label: "Achievements" },
     { href: "/gallery", label: "Gallery" },
+    { href: "https://kucet.ac.in", label: "KUCET Main Site", isExternal: true }
   ];
 
   // 3. Function to determine link styling

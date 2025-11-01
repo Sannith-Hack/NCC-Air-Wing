@@ -34,12 +34,16 @@ const Header = ({ user, isAdmin }: HeaderProps) => {
     }
   };
 
-  // 2. Function to determine link style
+  // 2. Function to determine link style (internal links)
   const getLinkClass = (path: string) => {
     return `px-3 py-2 font-medium hover:bg-[#3A70B8] rounded-md transition-colors ${
       location.pathname === path ? 'bg-[#3A70B8]' : ''
     }`;
   };
+  //  New Function for KUCET Main Site Link (external links)
+  const getExternalLinkClass = () => {
+    return `px-3 py-2 font-medium hover:bg-[#3A70B8] rounded-md transition-colors`;
+   };
 
   return (
     <header className="font-[Arial,sans-serif] shadow-md">
@@ -78,12 +82,22 @@ const Header = ({ user, isAdmin }: HeaderProps) => {
 
               {/* 3. Desktop Nav Links with active styling */}
               <div className="hidden md:flex items-center space-x-4 text-sm">
+
                 <Link to="/" className={getLinkClass('/')}>HOME</Link>
                 <Link to="/achievements" className={getLinkClass('/achievements')}>ACHIEVEMENTS</Link>
                 <Link to="/announcements" className={getLinkClass('/announcements')}>ANNOUNCEMENTS</Link>
                 <Link to="/gallery" className={getLinkClass('/gallery')}>GALLERY</Link>
               </div>
             </div>
+                            {/*  New External Link Added Here */}
+                <a 
+                  href="https://kucet.ac.in" 
+                  target="_blank" 
+                  rel="noopener noreferrer" 
+                  className={getExternalLinkClass()}
+                >
+                  KUCET Main Site
+                </a>            
             
             {/* Auth Buttons (Right side) */}
             <div className="flex items-center gap-2">

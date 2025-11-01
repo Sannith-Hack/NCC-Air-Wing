@@ -4,7 +4,7 @@ import Footer from "../components/Footer"; // Assuming you are using the new Foo
 import { Button } from "../components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "../components/ui/card";
 import { useAuth } from "../hooks/use-auth";
-import heroBanner from "../assets/ncc-hero-banner.jpg";
+import heroBanner from "../assets/ncc-hero-banner.jpeg";
 import nccLogo from "../assets/ncc-logo.png";
 
 const Index = () => {
