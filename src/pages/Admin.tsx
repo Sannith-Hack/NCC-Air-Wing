@@ -12,12 +12,20 @@ import { Label } from "@/components/ui/label";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/hooks/use-auth";
-import { useToast } from "@/hooks/use-toast";
-import { Download, Edit, Plus, Trash2 } from "lucide-react";
+// REMOVED: import { useToast } from "@/hooks/use-toast";
+import { toast } from "@/components/ui/sonner"; // ADDED: Import toast from sonner
+import { Download, Edit, Plus, Trash2, Calendar as CalendarIcon } from "lucide-react"; // ADDED: CalendarIcon
+
+// ADDED: Imports for Calendar Date Picker
+import { format } from "date-fns";
+import { cn } from "@/lib/utils";
+import { Calendar } from "@/components/ui/calendar";
+import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
 
 const Admin = () => {
   const navigate = useNavigate();
-  const { toast } = useToast();
+  // REMOVED: const { toast } = useToast();
+  // The imported `toast` function from sonner can be used directly.
   const { user, isAdmin, loading: authLoading } = useAuth();
 
   const [students, setStudents] = useState<any[]>([]);
@@ -36,15 +44,18 @@ const Admin = () => {
   const [addingType, setAddingType] = useState<'achievement' | 'announcement' | 'gallery' | null>(null);
   const [newRecord, setNewRecord] = useState<any>({});
 
+  const [isUploading, setIsUploading] = useState(false);
+
   useEffect(() => {
     if (authLoading) return;
     if (!isAdmin) {
-      toast({ title: "Access Denied", description: "You don't have admin privileges.", variant: "destructive" });
+      // CHANGED: Updated toast call for sonner
+      toast.error("Access Denied", { description: "You don't have admin privileges." });
       navigate("/");
       return;
     }
     fetchAllData();
-  }, [user, isAdmin, authLoading, navigate, toast]);
+  }, [user, isAdmin, authLoading, navigate]); // Removed toast from dependency array
 
   const fetchAllData = async () => {
     setLoadingData(true);
@@ -64,11 +75,61 @@ const Admin = () => {
     setLoadingData(false);
   };
 
+  const handleImageUpload = async (
+    event: React.ChangeEvent<HTMLInputElement>,
+    type: 'gallery' | 'achievement',
+    mode: 'add' | 'edit'
+  ) => {
+    const file = event.target.files?.[0];
+    if (!file) return;
+
+    setIsUploading(true);
+    // CHANGED: Updated toast call for sonner
+    toast.info('Uploading image...');
+
+    const bucket = type === 'gallery' ? 'gallery_images' : 'achievement_images';
+    const fileExt = file.name.split('.').pop();
+    const filePath = `${Date.now()}.${fileExt}`; // Unique file name
+
+    try {
+      const { error: uploadError } = await supabase.storage
+        .from(bucket)
+        .upload(filePath, file);
+
+      if (uploadError) throw uploadError;
+
+      const { data } = supabase.storage.from(bucket).getPublicUrl(filePath);
+
+      if (!data.publicUrl) throw new Error('Could not get public URL.');
+
+      const fieldName = type === 'gallery' ? 'src' : 'image';
+
+      if (mode === 'add') {
+        setNewRecord((prev: any) => ({ ...prev, [fieldName]: data.publicUrl }));
+      } else {
+        setEditingRecord((prev: any) => ({ ...prev, [fieldName]: data.publicUrl }));
+      }
+
+      // CHANGED: Updated toast call for sonner
+      toast.success('Upload Successful', {
+        description: 'Image URL has been set.',
+      });
+    } catch (error: any) {
+      // CHANGED: Updated toast call for sonner
+      toast.error('Upload Failed', {
+        description: error.message || 'An unknown error occurred.',
+      });
+    } finally {
+      setIsUploading(false);
+    }
+  };
+
   const handleUpdate = async (id: string, data: any, type: 'student' | 'ncc' | 'experience' | 'achievement' | 'announcement' | 'gallery') => {
     const { created_at, students, ...updatePayload } = data;
     let error;
 
     switch(type) {
+        // ... (cases 'student', 'ncc', 'experience' remain the same)
         case 'student':
             const { student_id, ...studentPayload } = updatePayload;
             ({ error } = await supabase.from('students').update(studentPayload).eq('student_id', id));
@@ -95,8 +156,14 @@ const Admin = () => {
             break;
     }
 
-    if (error) { toast({ title: `Error updating ${type}`, description: error.message, variant: "destructive" }); }
-    else { toast({ title: "Success", description: `${type.charAt(0).toUpperCase() + type.slice(1)} record updated.` }); }
+    if (error) { 
+      // CHANGED: Updated toast call for sonner
+      toast.error(`Error updating ${type}`, { description: error.message }); 
+    }
+    else { 
+      // CHANGED: Updated toast call for sonner
+      toast.success("Success", { description: `${type.charAt(0).toUpperCase() + type.slice(1)} record updated.` }); 
+    }
 
     await fetchAllData();
     setIsModalOpen(false);
@@ -107,6 +174,7 @@ const Admin = () => {
     let error;
 
      switch(type) {
+        // ... (all cases remain the same)
         case 'student':
             ({ error } = await supabase.from('students').delete().eq('student_id', id));
             break;
@@ -127,8 +195,14 @@ const Admin = () => {
             break;
     }
 
-    if (error) { toast({ title: `Error deleting ${type}`, description: error.message, variant: "destructive" }); }
-    else { toast({ title: "Success", description: `${type.charAt(0).toUpperCase() + type.slice(1)} record deleted.` }); }
+    if (error) { 
+      // CHANGED: Updated toast call for sonner
+      toast.error(`Error deleting ${type}`, { description: error.message }); 
+    }
+    else { 
+      // CHANGED: Updated toast call for sonner
+      toast.success("Success", { description: `${type.charAt(0).toUpperCase() + type.slice(1)} record deleted.` }); 
+    }
 
     await fetchAllData();
     setIsModalOpen(false);
@@ -138,6 +212,7 @@ const Admin = () => {
     console.log("Creating new record:", data, "of type", type);
     let error;
     switch(type) {
+        // ... (all cases remain the same)
         case 'achievement':
             ({ error } = await supabase.from('achievements').insert(data));
             break;
@@ -151,14 +226,21 @@ const Admin = () => {
 
     if (error) { 
         console.error("Error creating record:", error);
-        toast({ title: `Error creating ${type}`, description: error.message, variant: "destructive" }); 
+        // CHANGED: Updated toast call for sonner
+        toast.error(`Error creating ${type}`, { description: error.message }); 
     }
-    else { toast({ title: "Success", description: `${type.charAt(0).toUpperCase() + type.slice(1)} record created.` }); }
+    else { 
+      // CHANGED: Updated toast call for sonner
+      toast.success("Success", { description: `${type.charAt(0).toUpperCase() + type.slice(1)} record created.` }); 
+    }
 
     await fetchAllData();
     setIsAddModalOpen(false);
     setNewRecord({});
   };
+
+  // ... (handleEditClick, handleAddClick, handleDownloadExcel, and the main component layout remain the same)
+  // ... (No changes needed in the main JSX part, only in the Dialogs below)
 
   const handleEditClick = (record: any, type: 'student' | 'ncc' | 'experience' | 'achievement' | 'announcement' | 'gallery') => {
     setEditingType(type);
@@ -191,6 +273,7 @@ const Admin = () => {
   return (
     <>
       <div className="container mx-auto px-4 py-8">
+        {/* ... (This whole section remains the same) ... */}
         <div className="mb-6 flex justify-between items-center">
           <div>
             <h1 className="text-3xl font-bold text-foreground">Admin Dashboard</h1>
@@ -208,6 +291,7 @@ const Admin = () => {
             <TabsTrigger value="gallery">Gallery ({gallery.length})</TabsTrigger>
           </TabsList>
           
+          {/* ... (TabsContent for students, ncc, experience, gallery, announcements, achievements remains the same) ... */}
           <TabsContent value="students">
             <Card>
               <CardHeader>
@@ -438,6 +522,7 @@ const Admin = () => {
                 <DialogDescription>Make changes to the record below. Click save when you're done.</DialogDescription>
             </DialogHeader>
             
+            {/* ... (editingType 'student', 'ncc', 'experience' Dialogs remain the same) ... */}
             {editingRecord && editingType === 'student' && (
                 <div className="grid gap-4 py-4">
                     <div className="grid grid-cols-4 items-center gap-4"><Label htmlFor="name" className="text-right">Name</Label><Input id="name" value={editingRecord.name} onChange={(e) => setEditingRecord({...editingRecord, name: e.target.value})} className="col-span-3"/></div>
@@ -467,6 +552,7 @@ const Admin = () => {
                 </div>
             )}
 
+            {/* ... (editingType 'achievement' Dialog remains the same) ... */}
             {editingRecord && editingType === 'achievement' && (
                 <div className="grid gap-4 py-4">
                     <div className="grid grid-cols-4 items-center gap-4"><Label htmlFor="achievement_title" className="text-right">Title</Label><Input id="achievement_title" value={editingRecord.achievement_title} onChange={(e) => setEditingRecord({...editingRecord, achievement_title: e.target.value})} className="col-span-3"/></div>
@@ -474,6 +560,18 @@ const Admin = () => {
                     <div className="grid grid-cols-4 items-center gap-4"><Label htmlFor="rank" className="text-right">Rank</Label><Input id="rank" value={editingRecord.rank} onChange={(e) => setEditingRecord({...editingRecord, rank: e.target.value})} className="col-span-3"/></div>
                     <div className="grid grid-cols-4 items-center gap-4"><Label htmlFor="event" className="text-right">Event</Label><Input id="event" value={editingRecord.event} onChange={(e) => setEditingRecord({...editingRecord, event: e.target.value})} className="col-span-3"/></div>
                     <div className="grid grid-cols-4 items-center gap-4"><Label htmlFor="year" className="text-right">Year</Label><Input id="year" value={editingRecord.year} onChange={(e) => setEditingRecord({...editingRecord, year: e.target.value})} className="col-span-3"/></div>
+                    
+                    <div className="grid grid-cols-4 items-center gap-4">
+                      <Label htmlFor="image-edit-upload" className="text-right">Add Image</Label>
+                      <Input 
+                        id="image-edit-upload" 
+                        type="file" 
+                        onChange={(e) => handleImageUpload(e, 'achievement', 'edit')} 
+                        disabled={isUploading}
+                        className="col-span-3"
+                        accept="image/png, image/jpeg, image/webp" 
+                      />
+                    </div>
                 </div>
             )}
 
@@ -481,24 +579,93 @@ const Admin = () => {
                 <div className="grid gap-4 py-4">
                     <div className="grid grid-cols-4 items-center gap-4"><Label htmlFor="title" className="text-right">Title</Label><Input id="title" value={editingRecord.title} onChange={(e) => setEditingRecord({...editingRecord, title: e.target.value})} className="col-span-3"/></div>
                     <div className="grid grid-cols-4 items-center gap-4"><Label htmlFor="description" className="text-right">Description</Label><Input id="description" value={editingRecord.description} onChange={(e) => setEditingRecord({...editingRecord, description: e.target.value})} className="col-span-3"/></div>
-                    <div className="grid grid-cols-4 items-center gap-4"><Label htmlFor="date" className="text-right">Date</Label><Input id="date" type="date" value={editingRecord.date} onChange={(e) => setEditingRecord({...editingRecord, date: e.target.value})} className="col-span-3"/></div>
+                    
+                    {/* CHANGED: Replaced Input with Calendar Popover */}
+                    <div className="grid grid-cols-4 items-center gap-4">
+                      <Label htmlFor="date" className="text-right">Date</Label>
+                      <Popover>
+                        <PopoverTrigger asChild>
+                          <Button
+                            variant={"outline"}
+                            className={cn(
+                              "col-span-3 justify-start text-left font-normal",
+                              !editingRecord.date && "text-muted-foreground"
+                            )}
+                          >
+                            <CalendarIcon className="mr-2 h-4 w-4" />
+                            {editingRecord.date ? format(new Date(editingRecord.date), "PPP") : <span>Pick a date</span>}
+                          </Button>
+                        </PopoverTrigger>
+                        <PopoverContent className="w-auto p-0">
+                          <Calendar
+                            mode="single"
+                            selected={editingRecord.date ? new Date(editingRecord.date) : undefined}
+                            onSelect={(date) => setEditingRecord({ ...editingRecord, date: date ? format(date, "yyyy-MM-dd") : '' })}
+                            initialFocus
+                          />
+                        </PopoverContent>
+                      </Popover>
+                    </div>
+                    
                     <div className="grid grid-cols-4 items-center gap-4"><Label htmlFor="tag" className="text-right">Tag</Label><Input id="tag" value={editingRecord.tag} onChange={(e) => setEditingRecord({...editingRecord, tag: e.target.value})} className="col-span-3"/></div>
                 </div>
             )}
 
             {editingRecord && editingType === 'gallery' && (
                 <div className="grid gap-4 py-4">
-                    <div className="grid grid-cols-4 items-center gap-4"><Label htmlFor="src" className="text-right">Image URL</Label><Input id="src" value={editingRecord.src} onChange={(e) => setEditingRecord({...editingRecord, src: e.target.value})} className="col-span-3"/></div>
+                    <div className="grid grid-cols-4 items-center gap-4">
+                      <Label htmlFor="src-edit-upload" className="text-right">Add Image</Label>
+                      <Input 
+                        id="src-edit-upload" 
+                        type="file" 
+                        onChange={(e) => handleImageUpload(e, 'gallery', 'edit')} 
+                        disabled={isUploading}
+                        className="col-span-3"
+                        accept="image/png, image/jpeg, image/webp" 
+                      />
+                    </div>
                     <div className="grid grid-cols-4 items-center gap-4"><Label htmlFor="event" className="text-right">Event</Label><Input id="event" value={editingRecord.event} onChange={(e) => setEditingRecord({...editingRecord, event: e.target.value})} className="col-span-3"/></div>
-                    <div className="grid grid-cols-4 items-center gap-4"><Label htmlFor="date" className="text-right">Date</Label><Input id="date" value={editingRecord.date} onChange={(e) => setEditingRecord({...editingRecord, date: e.target.value})} className="col-span-3"/></div>
+                    
+                    {/* CHANGED: Replaced Input with Calendar Popover */}
+                    <div className="grid grid-cols-4 items-center gap-4">
+                      <Label htmlFor="date" className="text-right">Date</Label>
+                      <Popover>
+                        <PopoverTrigger asChild>
+                          <Button
+                            variant={"outline"}
+                            className={cn(
+                              "col-span-3 justify-start text-left font-normal",
+                              !editingRecord.date && "text-muted-foreground"
+                            )}
+                          >
+                            <CalendarIcon className="mr-2 h-4 w-4" />
+                            {editingRecord.date ? format(new Date(editingRecord.date), "PPP") : <span>Pick a date</span>}
+                          </Button>
+                        </PopoverTrigger>
+                        <PopoverContent className="w-auto p-0">
+                          <Calendar
+                            mode="single"
+                            selected={editingRecord.date ? new Date(editingRecord.date) : undefined}
+                            onSelect={(date) => setEditingRecord({ ...editingRecord, date: date ? format(date, "yyyy-MM-dd") : '' })}
+                            initialFocus
+                          />
+                        </PopoverContent>
+                      </Popover>
+                    </div>
                 </div>
             )}
 
             <DialogFooter className="sm:justify-between">
+                {/* ... (DialogFooter remains the same) ... */}
                 <Button variant="destructive" onClick={() => handleDelete(editingRecord[editingType === 'student' ? 'student_id' : editingType === 'ncc' ? 'ncc_id' : editingType === 'experience' ? 'experience_id' : 'id'], editingType!)} className="sm:mr-auto"> <Trash2 className="h-4 w-4 mr-2"/> Delete </Button>
                 <div>
                     <Button variant="ghost" onClick={() => setIsModalOpen(false)}>Cancel</Button>
-                    <Button onClick={() => handleUpdate(editingRecord[editingType === 'student' ? 'student_id' : editingType === 'ncc' ? 'ncc_id' : editingType === 'experience' ? 'experience_id' : 'id'], editingRecord, editingType!)}>Save Changes</Button>
+                    <Button 
+                      onClick={() => handleUpdate(editingRecord[editingType === 'student' ? 'student_id' : editingType === 'ncc' ? 'ncc_id' : editingType === 'experience' ? 'experience_id' : 'id'], editingRecord, editingType!)}
+                      disabled={isUploading}
+                    >
+                      {isUploading ? "Uploading..." : "Save Changes"}
+                    </Button>
                 </div>
             </DialogFooter>
         </DialogContent>
@@ -511,6 +678,7 @@ const Admin = () => {
                 <DialogDescription>Fill in the details for the new record below. Click save when you're done.</DialogDescription>
             </DialogHeader>
             
+            {/* ... (addingType 'achievement' Dialog remains the same) ... */}
             {addingType === 'achievement' && (
                 <div className="grid gap-4 py-4">
                     <div className="grid grid-cols-4 items-center gap-4"><Label htmlFor="achievement_title" className="text-right">Title</Label><Input id="achievement_title" value={newRecord.achievement_title || ''} onChange={(e) => setNewRecord({...newRecord, achievement_title: e.target.value})} className="col-span-3"/></div>
@@ -518,6 +686,18 @@ const Admin = () => {
                     <div className="grid grid-cols-4 items-center gap-4"><Label htmlFor="rank" className="text-right">Rank</Label><Input id="rank" value={newRecord.rank || ''} onChange={(e) => setNewRecord({...newRecord, rank: e.target.value})} className="col-span-3"/></div>
                     <div className="grid grid-cols-4 items-center gap-4"><Label htmlFor="event" className="text-right">Event</Label><Input id="event" value={newRecord.event || ''} onChange={(e) => setNewRecord({...newRecord, event: e.target.value})} className="col-span-3"/></div>
                     <div className="grid grid-cols-4 items-center gap-4"><Label htmlFor="year" className="text-right">Year</Label><Input id="year" value={newRecord.year || ''} onChange={(e) => setNewRecord({...newRecord, year: e.target.value})} className="col-span-3"/></div>
+                    
+                    <div className="grid grid-cols-4 items-center gap-4">
+                      <Label htmlFor="image-add-upload" className="text-right">Add Image</Label>
+                      <Input 
+                        id="image-add-upload" 
+                        type="file" 
+                        onChange={(e) => handleImageUpload(e, 'achievement', 'add')} 
+                        disabled={isUploading}
+                        className="col-span-3"
+                        accept="image/png, image/jpeg, image/webp" 
+                      />
+                    </div>
                 </div>
             )}
 
@@ -525,25 +705,94 @@ const Admin = () => {
                 <div className="grid gap-4 py-4">
                     <div className="grid grid-cols-4 items-center gap-4"><Label htmlFor="title" className="text-right">Title</Label><Input id="title" value={newRecord.title || ''} onChange={(e) => setNewRecord({...newRecord, title: e.target.value})} className="col-span-3"/></div>
                     <div className="grid grid-cols-4 items-center gap-4"><Label htmlFor="description" className="text-right">Description</Label><Input id="description" value={newRecord.description || ''} onChange={(e) => setNewRecord({...newRecord, description: e.target.value})} className="col-span-3"/></div>
-                    <div className="grid grid-cols-4 items-center gap-4"><Label htmlFor="date" className="text-right">Date</Label><Input id="date" type="date" value={newRecord.date || ''} onChange={(e) => setNewRecord({...newRecord, date: e.target.value})} className="col-span-3"/></div>
+                    
+                    {/* CHANGED: Replaced Input with Calendar Popover */}
+                    <div className="grid grid-cols-4 items-center gap-4">
+                      <Label htmlFor="date" className="text-right">Date</Label>
+                      <Popover>
+                        <PopoverTrigger asChild>
+                          <Button
+                            variant={"outline"}
+                            className={cn(
+                              "col-span-3 justify-start text-left font-normal",
+                              !newRecord.date && "text-muted-foreground"
+                            )}
+                          >
+                            <CalendarIcon className="mr-2 h-4 w-4" />
+                            {newRecord.date ? format(new Date(newRecord.date), "PPP") : <span>Pick a date</span>}
+                          </Button>
+                        </PopoverTrigger>
+                        <PopoverContent className="w-auto p-0">
+                          <Calendar
+                            mode="single"
+                            selected={newRecord.date ? new Date(newRecord.date) : undefined}
+                            onSelect={(date) => setNewRecord({ ...newRecord, date: date ? format(date, "yyyy-MM-dd") : '' })}
+                            initialFocus
+                          />
+                        </PopoverContent>
+                      </Popover>
+                    </div>
+
                     <div className="grid grid-cols-4 items-center gap-4"><Label htmlFor="tag" className="text-right">Tag</Label><Input id="tag" value={newRecord.tag || ''} onChange={(e) => setNewRecord({...newRecord, tag: e.target.value})} className="col-span-3"/></div>
                 </div>
             )}
 
             {addingType === 'gallery' && (
                 <div className="grid gap-4 py-4">
-                    <div className="grid grid-cols-4 items-center gap-4"><Label htmlFor="src" className="text-right">Image URL</Label><Input id="src" value={newRecord.src || ''} onChange={(e) => setNewRecord({...newRecord, src: e.target.value})} className="col-span-3"/></div>
+                    <div className="grid grid-cols-4 items-center gap-4">
+                      <Label htmlFor="src-add-upload" className="text-right">Add Image</Label>
+                      <Input 
+                        id="src-add-upload" 
+                        type="file" 
+                        onChange={(e) => handleImageUpload(e, 'gallery', 'add')} 
+                        disabled={isUploading}
+                        className="col-span-3"
+                        accept="image/png, image/jpeg, image/webp" 
+                      />
+                    </div>
                     <div className="grid grid-cols-4 items-center gap-4"><Label htmlFor="event" className="text-right">Event</Label><Input id="event" value={newRecord.event || ''} onChange={(e) => setNewRecord({...newRecord, event: e.target.value})} className="col-span-3"/></div>
-                    <div className="grid grid-cols-4 items-center gap-4"><Label htmlFor="date" className="text-right">Date</Label><Input id="date" type="date" value={newRecord.date || ''} onChange={(e) => setNewRecord({...newRecord, date: e.target.value})} className="col-span-3"/></div>
+                    
+                    {/* CHANGED: Replaced Input with Calendar Popover */}
+                    <div className="grid grid-cols-4 items-center gap-4">
+                      <Label htmlFor="date" className="text-right">Date</Label>
+                      <Popover>
+                        <PopoverTrigger asChild>
+                          <Button
+                            variant={"outline"}
+                            className={cn(
+                              "col-span-3 justify-start text-left font-normal",
+                              !newRecord.date && "text-muted-foreground"
+                            )}
+                          >
+                            <CalendarIcon className="mr-2 h-4 w-4" />
+                            {newRecord.date ? format(new Date(newRecord.date), "PPP") : <span>Pick a date</span>}
+                          </Button>
+                        </PopoverTrigger>
+                        <PopoverContent className="w-auto p-0">
+                          <Calendar
+                            mode="single"
+                            selected={newRecord.date ? new Date(newRecord.date) : undefined}
+                            onSelect={(date) => setNewRecord({ ...newRecord, date: date ? format(date, "yyyy-MM-dd") : '' })}
+                            initialFocus
+                          />
+                        </PopoverContent>
+                      </Popover>
+                    </div>
                 </div>
             )}
 
             <DialogFooter>
+                {/* ... (DialogFooter remains the same) ... */}
                 <Button variant="ghost" onClick={() => setIsAddModalOpen(false)}>Cancel</Button>
-                <Button onClick={() => {
+                <Button 
+                  onClick={() => {
                     console.log("Save Changes button clicked");
                     handleCreate(newRecord, addingType!)
-                }}>Save Changes</Button>
+                  }}
+                  disabled={isUploading}
+                >
+                  {isUploading ? "Uploading..." : "Save Changes"}
+                </Button>
             </DialogFooter>
         </DialogContent>
     </Dialog>
