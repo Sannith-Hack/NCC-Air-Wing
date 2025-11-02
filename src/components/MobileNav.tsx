@@ -34,11 +34,10 @@ const MobileNav = ({ user, isAdmin }: MobileNavProps) => {
 
   // 2. Define navigation links
   const navLinks = [
-    { href: "/", label: "Home", isExternal: false },
+    { href: "/", label: "Home" },
     { href: "/announcements", label: "Announcements" },
     { href: "/achievements", label: "Achievements" },
     { href: "/gallery", label: "Gallery" },
-    { href: "https://kucet.ac.in", label: "KUCET Main Site", isExternal: true }
   ];
 
   // 3. Function to determine link styling
