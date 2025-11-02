@@ -12,6 +12,7 @@ import Gallery from "./pages/Gallery";
 import ResetPassword from "./pages/ResetPassword";
 import Verify from "./pages/Verify";
 import ScrollToTop from "./components/ScrollToTop"; 
+import { Toaster } from "@/components/ui/sonner"; 
 
 function App() {
   return (
@@ -33,6 +34,8 @@ function App() {
           </Route>
         </Routes>
       </BrowserRouter>
+      <Toaster richColors closeButton />
+
     </AuthProvider>
   );
 }
