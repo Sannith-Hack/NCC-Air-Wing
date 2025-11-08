@@ -1,0 +1,38 @@
+[
+  {
+    "id": 1,
+    "cadetName": "Rohan Sharma",
+    "rank": "Cadet Warrant Officer",
+    "achievementTitle": "Best Cadet Award",
+    "event": "Annual Training Camp",
+    "year": 2024,
+    "image": "https://placehold.co/600x400/EAB308/000000?text=Photo"
+  },
+  {
+    "id": 2,
+    "cadetName": "Priya Singh",
+    "rank": "Cadet Sergeant",
+    "achievementTitle": "Republic Day Camp (RDC) Participant",
+    "event": "New Delhi",
+    "year": 2025,
+    "image": "https://placehold.co/600x400/3B82F6/FFFFFF?text=Photo"
+  },
+  {
+    "id": 3,
+    "cadetName": "Anjali Verma",
+    "rank": "Cadet Corporal",
+    "achievementTitle": "Gold Medal in Firing",
+    "event": "Inter-Group Competition",
+    "year": 2024,
+    "image": "https://placehold.co/600x400/EAB308/000000?text=Photo"
+  },
+  {
+    "id": 4,
+    "cadetName": "Vikram Rathod",
+    "rank": "Cadet",
+    "achievementTitle": "All India Vayu Sainik Camp",
+    "event": "Jodhpur",
+    "year": 2025,
+    "image": "https://placehold.co/600x400/3B82F6/FFFFFF?text=Photo"
+  }
+]

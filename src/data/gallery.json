@@ -1,0 +1,33 @@
+[
+  {
+    "id": 1,
+    "src": "/ncc_imgs/ncc_air_wing1.jpg",
+    "event": "Annual Training Camp",
+    "date": "2024-09-27"
+  },
+  {
+    "id": 2,
+    "src": "/ncc_imgs/ncc_air_wing2.jpg",
+    "event": "Republic Day Parade",
+    "date": "2024-08-15"
+  },
+  {
+    "id": 3,
+    "src": "/ncc_imgs/ncc_air_wing3.jpg",
+    "event": "Drill Practice",
+    "date": "2024-08-15"
+  },
+  {
+    "id": 4,
+    "src": "/ncc_imgs/ncc_air_wing4.jpg",
+    "event": "Social Service Camp",
+    "date": "2025-07-17"
+  },
+  {
+    "id": 5,
+    "src": "/ncc_imgs/ncc_air_wing5.jpg",
+    "event": "International Yoga Day",
+    "date": "2024-12-10"
+  }
+
+]

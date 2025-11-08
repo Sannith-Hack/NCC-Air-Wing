@@ -1,0 +1,34 @@
+[
+  {
+    "id": 1,
+    "title": "Annual Training Camp 2025",
+    "date": "2025-11-15",
+    "description": "The Annual Training Camp for all cadets will be held at the university grounds. Attendance is mandatory.",
+    "tag": "Important",
+    "tagColor": "bg-red-100 text-red-800"
+  },
+  {
+    "id": 2,
+    "title": "Drill Practice Schedule Update",
+    "date": "2025-10-20",
+    "description": "New drill practice timings are announced for the upcoming Republic Day parade preparations. Check the notice board.",
+    "tag": "Upcoming",
+    "tagColor": "bg-blue-100 text-blue-800"
+  },
+  {
+    "id": 3,
+    "title": "Inter-Group Sports Competition",
+    "date": "2025-10-18",
+    "description": "Registrations are now open for the annual Inter-Group Sports Competition. Last date to register is Oct 25th.",
+    "tag": "Event",
+    "tagColor": "bg-green-100 text-green-800"
+  },
+  {
+    "id": 4,
+    "title": "Cadet Welfare Society Meeting",
+    "date": "2025-10-15",
+    "description": "A meeting will be held to discuss the agenda for the next quarter. All senior cadets are requested to join.",
+    "tag": "Meeting",
+    "tagColor": "bg-yellow-100 text-yellow-800"
+  }
+]
